@@ -1,0 +1,64 @@
+neg mul (30 20 10)
+>> (-900 -400 -100)
+
+* array => filler
+* mul requires two parameters replace them with filler
+* array operation automatically mapped to atomic function
+* take negative, automatically mapped to atomic function
+
+neg mul[10] (30 20 10)
+>> (-300 -200 -100)
+
+* array => filler
+* mul[10] requires one parameter (one already given) replace one with the filler
+* array operation automatically mapped to atomic function
+* take negative, automatically mapped to atomic function
+
+avg: {div[foldl[+] length]}
+avg
+>> 5
+
+* avg => function definition
+* one liner automatically starts with filler x
+* div takes two arguments that already given
+* first argument requires filler, supply it
+* second argument requires filler, supply it
+
+div[foldl[add] length] (1 2 3 4 5)
+>> 5
+
+foldl[add] filter[odd] (1 2 3 4 5)
+>> 9
+
+odd: {unequal[mod[2]]}
+odd 5
+>> true
+
+foldl[add] filter[{unequal[mod[2]]}] (1 2 3 4 5)
+>> 9
+
+odd (1 2 3 4 5)
+>> (true false true false true)
+
+flip (1 2 3 4 5)
+>> (5 4 3 2 1)
+
+div flip [1 2]
+>> 2
+
+print["my name is '{}'" ("tunc")]
+>> my name is 'tunc'
+
+print['my name is "{}"' ("tunc")]
+>> my name is "tunc"
+
+if[{println ["true"]} {println["false"]}] odd (1 2 3 4 5)
+>> true
+false
+true
+false
+true
+
+ioata at[upperbound[5]] (1 2 3 4 5)
+>> (1 2 3 4 5)
+
