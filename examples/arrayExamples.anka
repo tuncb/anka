@@ -14,9 +14,11 @@ neg mul[10] (30 20 10)
 * array operation automatically mapped to atomic function
 * take negative, automatically mapped to atomic function
 
-avg: {div[foldl[+] length]}
-avg
->> 5
+avg: {
+  div [foldl[add] length]
+}
+avg (1 2 3 4 5)
+>> 3
 
 * avg => function definition
 * one liner automatically starts with filler x
@@ -30,9 +32,15 @@ div[foldl[add] length] (1 2 3 4 5)
 foldl[add] filter[odd] (1 2 3 4 5)
 >> 9
 
-odd: {unequal[mod[2]]}
+odd: {
+  unequal[mod[2] 0]
+}
 odd 5
 >> true
+
+even:{
+  not odd
+}
 
 foldl[add] filter[{unequal[mod[2]]}] (1 2 3 4 5)
 >> 9
@@ -59,6 +67,5 @@ true
 false
 true
 
-ioata at[upperbound[5]] (1 2 3 4 5)
+ioata at upperbound[5] (1 2 3 4 5)
 >> (1 2 3 4 5)
-
