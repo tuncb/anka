@@ -1,4 +1,4 @@
-neg mul (30 20 10)
+neg mul[_1 _1] (30 20 10)
 >> (-900 -400 -100)
 
 * array => filler
@@ -15,7 +15,7 @@ neg mul[10] (30 20 10)
 * take negative, automatically mapped to atomic function
 
 avg: {
-  div [foldl[add] length]
+  div [foldl[add _1] length[_1]]
 }
 avg (1 2 3 4 5)
 >> 3
@@ -26,7 +26,7 @@ avg (1 2 3 4 5)
 * first argument requires filler, supply it
 * second argument requires filler, supply it
 
-div[foldl[add] length] (1 2 3 4 5)
+div[foldl[add _1] length[_1]] (1 2 3 4 5)
 >> 5
 
 foldl[add] filter[odd] (1 2 3 4 5)
@@ -67,5 +67,5 @@ true
 false
 true
 
-ioata at upperbound[5] (1 2 3 4 5)
+ioata at[upperbound[5 _1] _1] (1 2 3 4 5)
 >> (1 2 3 4 5)
