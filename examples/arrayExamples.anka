@@ -1,71 +1,82 @@
-neg mul[_1 _1] (30 20 10)
+neg mul [_1 _1] (30 20 10)
 >> (-900 -400 -100)
-
-* array => filler
-* mul requires two parameters replace them with filler
-* array operation automatically mapped to atomic function
-* take negative, automatically mapped to atomic function
 
 neg mul[10] (30 20 10)
 >> (-300 -200 -100)
 
-* array => filler
-* mul[10] requires one parameter (one already given) replace one with the filler
-* array operation automatically mapped to atomic function
-* take negative, automatically mapped to atomic function
+neg mul [10 _1] (30 20 10)
+>> (-300 -200 -100)
 
-avg: {
-  div [foldl[add _1] length[_1]]
-}
+avg: div [foldl[add] length]
+
 avg (1 2 3 4 5)
 >> 3
 
-* avg => function definition
-* one liner automatically starts with filler x
-* div takes two arguments that already given
-* first argument requires filler, supply it
-* second argument requires filler, supply it
-
-div[foldl[add _1] length[_1]] (1 2 3 4 5)
+div [foldl[add] length] (1 2 3 4 5)
 >> 5
 
+odd: unequal[0] mod[2]
 foldl[add] filter[odd] (1 2 3 4 5)
 >> 9
 
-odd: {
-  unequal[mod[2] 0]
-}
 odd 5
 >> true
 
-even:{
-  not odd
-}
+even: not odd
 
-foldl[add] filter[{unequal[mod[2]]}] (1 2 3 4 5)
+foldl[add] filter[{unequal[0] mod[2]}] (1 2 3 4 5)
 >> 9
 
 odd (1 2 3 4 5)
 >> (true false true false true)
 
-flip (1 2 3 4 5)
+reverse (1 2 3 4 5)
 >> (5 4 3 2 1)
 
-div flip [1 2]
+div reverse [1 2]
 >> 2
 
-print["my name is '{}'" ("tunc")]
+div [_2 _1] [1 2]
+>> 2
+
+print["my name is '{}'"] "tunc"
 >> my name is 'tunc'
 
-print['my name is "{}"' ("tunc")]
+print['my name is "{}"'] "tunc"
 >> my name is "tunc"
 
-if[{println ["true"]} {println["false"]}] odd (1 2 3 4 5)
+if[{println ["true"]} {println ["false"]}] odd (1 2 3 4 5)
 >> true
 false
 true
 false
 true
 
-ioata at[upperbound[5 _1] _1] (1 2 3 4 5)
+ioata at [_1 upperbound[5]] (1 2 3 4 5)
 >> (1 2 3 4 5)
+
+# Leetcode 2574. Left and Right Sum Differences https://www.youtube.com/watch?v=i1K_kUKJnE4&t=151s
+# Given a 0-indexed integer array nums, find a 0-indexed integer array answer where:
+# answer.length == nums.length.
+# answer[i] = |leftSum[i] - rightSum[i]|.
+# leftSum[i] is the sum of elements to the left of the index i in the array nums. If there is no such element, leftSum[i] = 0.
+# rightSum[i] is the sum of elements to the right of the index i in the array nums. If there is no such element, rightSum[i] = 0.
+
+# version 1
+l[pos]: rangel[pos]
+r[pos]: ranger[{inc pos}]
+answerGenerator[x pos]: abs sub toTuple ValueOr[0] foldl[add] toArray [l[pos] r[pos]] x
+generateWithIndex[answerGenerator] (10 4 8 3)
+>> (15 1 11 22)
+
+# version 2
+l: shiftr[0]
+r[x]: sub[head[x] x]
+abs sub [l r] scanl (10 4 8 3)
+>> (15 1 11 22)
+
+# version 3
+l: shiftr[0] scanl
+r: shiftl[0] reverse scanr
+abs sub [l r] (10 4 8 3)
+>> (15 1 11 22)
