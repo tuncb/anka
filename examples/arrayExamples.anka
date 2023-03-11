@@ -7,16 +7,16 @@ neg mul[10] (30 20 10)
 neg mul [10 _1] (30 20 10)
 >> (-300 -200 -100)
 
-avg: div [foldl[add] length]
+avg: div [foldl[add 0] length]
 
 avg (1 2 3 4 5)
 >> 3
 
-div [foldl[add] length] (1 2 3 4 5)
+div [foldl[add 0] length] (1 2 3 4 5)
 >> 5
 
 odd: unequal[0] mod[2]
-foldl[add] filter[odd] (1 2 3 4 5)
+foldl[add 0] filter[odd] (1 2 3 4 5)
 >> 9
 
 odd 5
@@ -24,7 +24,7 @@ odd 5
 
 even: not odd
 
-foldl[add] filter[{unequal[0] mod[2]}] (1 2 3 4 5)
+foldl[add 0] filter[{unequal[0] mod[2]}] (1 2 3 4 5)
 >> 9
 
 odd (1 2 3 4 5)
@@ -65,8 +65,8 @@ ioata at [_1 upperbound[5]] (1 2 3 4 5)
 # version 1
 l[pos]: rangel[pos]
 r[pos]: ranger[{inc pos}]
-answerGenerator[x pos]: abs sub toTuple ValueOr[0] foldl[add] toArray [l[pos] r[pos]] x
-generateWithIndex[answerGenerator] (10 4 8 3)
+generator[x pos]: abs sub foldl[add 0] [l[pos] r[pos]] x
+generateWithIndex[generator] (10 4 8 3)
 >> (15 1 11 22)
 
 # version 2
@@ -80,3 +80,26 @@ l: shiftr[0] scanl
 r: shiftl[0] reverse scanr
 abs sub [l r] (10 4 8 3)
 >> (15 1 11 22)
+
+
+# max count of positive Integers and Negative Integers
+# 0 is neither negative and positive
+# (-2 -1 -1 1 2 3) => 3
+# (-3 -2 -1 0 0 1 2) => 3
+# (5 20 66 1314) => 4
+
+# version 1
+max length [equal_range[lt[0]] equal_range[gt[0]]] x
+
+#version 2
+max length [rangel ranger] equal_range[equals[0]] x
+
+# calculate function from https://www.youtube.com/watch?v=wGCWlI4A5z4&t=372s
+calculate[bottom top]: {
+  even: equals[0] mod[2]
+  foldl[add 0] filter[even] (bottom..=top)
+}
+
+# Advent of Code 2022 day 6
+# count 4 slides that have unique elements
+count[equals[true]] all_unique slides[4] x
