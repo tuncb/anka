@@ -103,3 +103,35 @@ calculate[bottom top]: {
 # Advent of Code 2022 day 6
 # count 4 slides that have unique elements
 count[equals[true]] all_unique slides[4] x
+
+#sign of the product of an array
+#version 1
+find_sign: foldl[mul 1] signum x
+
+# version 2
+find_sign: {
+  nrNegatives: 0
+  if[1 -1] even[nrNegatives] |0: return[0] -1: {inc= nrNegatives}| x
+}
+
+# some definitions for internal functions
+filter[predicate]: |predicate: _1|
+if[trueFunc falseFunc]: |true: trueFunc false: falseFunc|
+count[predicate x]: {
+  nr: 0
+  nr |predicate: {inc= nr}| x
+}
+
+# final value of variable after performing operations
+operate[x]: {
+  val: 0
+  val |"--X": {dec= val} "X--": {dec= val} "++X": {inc= val} "X++": {inc= val}| x
+}
+
+#hash tables
+println |(1: "one" 2: "two" 3: "three" 4: "four" 5: "five")| (1 2 3 4 5)
+>> one
+two
+three
+four
+five
