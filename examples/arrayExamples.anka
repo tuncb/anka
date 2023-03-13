@@ -143,3 +143,23 @@ even
 odd
 even
 odd
+
+#Advent of Code 2022 in APL & BQN Day 1!
+# array of arrays
+data: ((1000 2000 3000) (4000) (5000 6000) (7000 8000 9000) (10000))
+max foldl[add 0] data
+# top three
+top[3] sort foldl[add 0] data
+
+# Algorithms as a Tool of Thought
+equals_to_first_element[x]: foldl[and true] equals[{head x}] x
+equals_to_first_element[x]: all equals[{head x}] x
+equals_to_first_element: all equals [head identity]
+equals_to_first_element: true |false: return[false]|
+equals_to_first_element: equals[1] length unique
+equals_to_first_element: all equals [...] slides[2]
+
+min_max_same: equals [min max]
+
+all_smaller_than_1: all lt[1]
+
