@@ -80,7 +80,7 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
 
 // Tests
 
-auto check_tokens(const std::string_view text, const std::vector<anka::Token> &expected) -> void
+auto checkTokens(const std::string_view text, const std::vector<anka::Token> &expected) -> void
 {
   auto tokens = anka::extractTokens(text);
   for (auto test_pair : ranges::views::zip(tokens, expected))
@@ -91,28 +91,28 @@ auto check_tokens(const std::string_view text, const std::vector<anka::Token> &e
 
 TEST_CASE("test array tokenizing")
 {
-  check_tokens("(1 2 3)",
-               {anka::Token{anka::TokenType::ArrayStart, 0, 1}, anka::Token{anka::TokenType::NumberInt, 1, 1},
-                anka::Token{anka::TokenType::NumberInt, 3, 1}, anka::Token{anka::TokenType::NumberInt, 5, 1},
-                anka::Token{anka::TokenType::ArrayEnd, 6, 1}, anka::Token{anka::TokenType::SentenceEnd, 7, 0}});
+  checkTokens("(1 2 3)",
+              {anka::Token{anka::TokenType::ArrayStart, 0, 1}, anka::Token{anka::TokenType::NumberInt, 1, 1},
+               anka::Token{anka::TokenType::NumberInt, 3, 1}, anka::Token{anka::TokenType::NumberInt, 5, 1},
+               anka::Token{anka::TokenType::ArrayEnd, 6, 1}, anka::Token{anka::TokenType::SentenceEnd, 7, 0}});
 
-  check_tokens(" (123 2  3444)",
-               {anka::Token{anka::TokenType::ArrayStart, 1, 1}, anka::Token{anka::TokenType::NumberInt, 2, 3},
-                anka::Token{anka::TokenType::NumberInt, 6, 1}, anka::Token{anka::TokenType::NumberInt, 9, 4},
-                anka::Token{anka::TokenType::ArrayEnd, 13, 1}, anka::Token{anka::TokenType::SentenceEnd, 14, 0}});
+  checkTokens(" (123 2  3444)",
+              {anka::Token{anka::TokenType::ArrayStart, 1, 1}, anka::Token{anka::TokenType::NumberInt, 2, 3},
+               anka::Token{anka::TokenType::NumberInt, 6, 1}, anka::Token{anka::TokenType::NumberInt, 9, 4},
+               anka::Token{anka::TokenType::ArrayEnd, 13, 1}, anka::Token{anka::TokenType::SentenceEnd, 14, 0}});
 
-  check_tokens("  (1 2 3)\n  (1 2 3)", {
-                                           anka::Token{anka::TokenType::ArrayStart, 2, 1},
-                                           anka::Token{anka::TokenType::NumberInt, 3, 1},
-                                           anka::Token{anka::TokenType::NumberInt, 5, 1},
-                                           anka::Token{anka::TokenType::NumberInt, 7, 1},
-                                           anka::Token{anka::TokenType::ArrayEnd, 8, 1},
-                                           anka::Token{anka::TokenType::SentenceEnd, 9, 1},
-                                           anka::Token{anka::TokenType::ArrayStart, 12, 1},
-                                           anka::Token{anka::TokenType::NumberInt, 13, 1},
-                                           anka::Token{anka::TokenType::NumberInt, 15, 1},
-                                           anka::Token{anka::TokenType::NumberInt, 17, 1},
-                                           anka::Token{anka::TokenType::ArrayEnd, 18, 1},
-                                           anka::Token{anka::TokenType::SentenceEnd, 19, 0},
-                                       });
+  checkTokens("  (1 2 3)\n  (1 2 3)", {
+                                          anka::Token{anka::TokenType::ArrayStart, 2, 1},
+                                          anka::Token{anka::TokenType::NumberInt, 3, 1},
+                                          anka::Token{anka::TokenType::NumberInt, 5, 1},
+                                          anka::Token{anka::TokenType::NumberInt, 7, 1},
+                                          anka::Token{anka::TokenType::ArrayEnd, 8, 1},
+                                          anka::Token{anka::TokenType::SentenceEnd, 9, 1},
+                                          anka::Token{anka::TokenType::ArrayStart, 12, 1},
+                                          anka::Token{anka::TokenType::NumberInt, 13, 1},
+                                          anka::Token{anka::TokenType::NumberInt, 15, 1},
+                                          anka::Token{anka::TokenType::NumberInt, 17, 1},
+                                          anka::Token{anka::TokenType::ArrayEnd, 18, 1},
+                                          anka::Token{anka::TokenType::SentenceEnd, 19, 0},
+                                      });
 }
