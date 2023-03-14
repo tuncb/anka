@@ -21,14 +21,10 @@ auto isSpace(const char c) -> bool
 template <typename Predicate>
 auto parseContinuously(Predicate predicate, const std::string_view content, size_t pos) -> size_t
 {
-  auto i = pos + 1;
-  while (i < content.size())
-  {
-    if (!predicate(content[i]))
-      break;
-    ++i;
-  }
-  return i - pos;
+  const auto b = content.begin() + pos;
+  const auto e = content.end();
+  auto next = std::ranges::find_if_not(b, e, predicate);
+  return std::distance(b, next);
 }
 
 auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
@@ -119,5 +115,5 @@ TEST_CASE("test array tokenizing")
 
 TEST_CASE("test tokenizing error: foreign character")
 {
-  CHECK_THROWS_AS(anka::extractTokens("(12 23 45f)"), const anka::TokenizerError &);
+  CHECK_THROWS_AS(anka::extractTokens("(12 23 45t)"), const anka::TokenizerError &);
 }
