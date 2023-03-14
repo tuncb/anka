@@ -29,6 +29,6 @@ struct Token
   auto operator<=>(const Token &) const = default;
 };
 
-auto extract_tokens(const std::string_view content) -> std::vector<Token>;
+auto extractTokens(const std::string_view content) -> std::vector<Token>;
 
 } // namespace anka

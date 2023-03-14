@@ -12,7 +12,7 @@
 
 #include "tokenizer.h"
 
-std::string read_file(const char *filename)
+std::string readFile(const char *filename)
 {
   std::ifstream t(filename);
   std::string str;
@@ -43,11 +43,11 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  auto content = read_file(filename.c_str());
+  auto content = readFile(filename.c_str());
 
   try
   {
-    auto tokens = anka::extract_tokens(content);
+    auto tokens = anka::extractTokens(content);
     std::cout << std::format("Parsed {} tokens.\n", tokens.size());
   }
   catch (anka::TokenizerError &err)

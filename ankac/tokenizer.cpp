@@ -31,7 +31,7 @@ auto parseContinuously(Predicate predicate, const std::string_view content, size
   return i - pos;
 }
 
-auto anka::extract_tokens(const std::string_view content) -> std::vector<Token>
+auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
 {
   std::vector<Token> tokens;
 
@@ -82,7 +82,7 @@ auto anka::extract_tokens(const std::string_view content) -> std::vector<Token>
 
 auto check_tokens(const std::string_view text, const std::vector<anka::Token> &expected) -> void
 {
-  auto tokens = anka::extract_tokens(text);
+  auto tokens = anka::extractTokens(text);
   for (auto test_pair : ranges::views::zip(tokens, expected))
   {
     CHECK_EQ(std::get<0>(test_pair), std::get<1>(test_pair));
