@@ -116,3 +116,8 @@ TEST_CASE("test array tokenizing")
                                           anka::Token{anka::TokenType::SentenceEnd, 19, 0},
                                       });
 }
+
+TEST_CASE("test tokenizing error: foreign character")
+{
+  CHECK_THROWS_AS(anka::extractTokens("(12 23 45f)"), const anka::TokenizerError &);
+}
