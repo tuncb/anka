@@ -162,4 +162,3 @@ equals_to_first_element: all equals [...] slides[2]
 min_max_same: equals [min max]
 
 all_smaller_than_1: all lt[1]
-
