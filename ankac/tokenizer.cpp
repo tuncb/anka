@@ -42,30 +42,30 @@ auto anka::extract_tokens(const std::string_view content) -> std::vector<Token>
   while (i < content.size())
   {
     const auto ch = content[i];
-    if (content[i] == array_start_char)
+    if (ch == array_start_char)
     {
       tokens.push_back(Token{TokenType::ArrayStart, i, 1});
     }
-    else if (content[i] == array_end_char)
+    else if (ch == array_end_char)
     {
       tokens.push_back(Token{TokenType::ArrayEnd, i, 1});
     }
-    else if (isNumber(content[i]))
+    else if (isNumber(ch))
     {
       tokens.push_back(Token{TokenType::NumberInt, i, parseContinuously(isNumber, content, i)});
     }
-    else if (isEndLine(content[i]))
+    else if (isEndLine(ch))
     {
       tokens.push_back(Token{TokenType::SentenceEnd, i, parseContinuously(isEndLine, content, i)});
     }
-    else if (isSpace(content[i]))
+    else if (isSpace(ch))
     {
       i = i + parseContinuously(isSpace, content, i);
       continue;
     }
     else
     {
-      throw TokenizerError{i, content[i]};
+      throw TokenizerError{i, ch};
     }
 
     i = i + tokens.back().len;
