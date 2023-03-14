@@ -34,8 +34,6 @@ auto parseContinuously(Predicate predicate, const std::string_view content, size
 auto anka::extract_tokens(const std::string_view content) -> std::vector<Token>
 {
   std::vector<Token> tokens;
-  size_t token_start = 0;
-  size_t token_end = 0;
 
   constexpr const char array_start_char = '(';
   constexpr const char array_end_char = ')';
