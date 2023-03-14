@@ -1,4 +1,7 @@
 #include "tokenizer.h"
+#include <doctest/doctest.h>
+
+#include <range/v3/view/zip.hpp>
 
 auto isNumber(const char c) -> bool
 {
@@ -19,14 +22,13 @@ template <typename Predicate>
 auto parseContinuously(Predicate predicate, const std::string_view content, size_t pos) -> size_t
 {
   auto i = pos + 1;
-  size_t len = 1;
   while (i < content.size())
   {
     if (!predicate(content[i]))
       break;
-    ++len;
+    ++i;
   }
-  return len;
+  return i - pos;
 }
 
 auto anka::extract_tokens(const std::string_view content) -> std::vector<Token>
@@ -44,7 +46,7 @@ auto anka::extract_tokens(const std::string_view content) -> std::vector<Token>
     const auto ch = content[i];
     if (content[i] == array_start_char)
     {
-      tokens.push_back(Token{TokenType::ArrayEnd, i, 1});
+      tokens.push_back(Token{TokenType::ArrayStart, i, 1});
     }
     else if (content[i] == array_end_char)
     {
@@ -71,8 +73,48 @@ auto anka::extract_tokens(const std::string_view content) -> std::vector<Token>
     i = i + tokens.back().len;
   }
 
-  if (tokens.size() > 0 && tokens.back().type != TokenType::SentenceEnd) {
+  if (tokens.size() > 0 && tokens.back().type != TokenType::SentenceEnd)
+  {
     tokens.push_back(Token{TokenType::SentenceEnd, content.size(), 0});
   }
   return tokens;
+}
+
+// Tests
+
+auto check_tokens(const std::string_view text, const std::vector<anka::Token> &expected) -> void
+{
+  auto tokens = anka::extract_tokens(text);
+  for (auto test_pair : ranges::views::zip(tokens, expected))
+  {
+    CHECK_EQ(std::get<0>(test_pair), std::get<1>(test_pair));
+  }
+}
+
+TEST_CASE("test array tokenizing")
+{
+  check_tokens("(1 2 3)",
+               {anka::Token{anka::TokenType::ArrayStart, 0, 1}, anka::Token{anka::TokenType::NumberInt, 1, 1},
+                anka::Token{anka::TokenType::NumberInt, 3, 1}, anka::Token{anka::TokenType::NumberInt, 5, 1},
+                anka::Token{anka::TokenType::ArrayEnd, 6, 1}, anka::Token{anka::TokenType::SentenceEnd, 7, 0}});
+
+  check_tokens(" (123 2  3444)",
+               {anka::Token{anka::TokenType::ArrayStart, 1, 1}, anka::Token{anka::TokenType::NumberInt, 2, 3},
+                anka::Token{anka::TokenType::NumberInt, 6, 1}, anka::Token{anka::TokenType::NumberInt, 9, 4},
+                anka::Token{anka::TokenType::ArrayEnd, 13, 1}, anka::Token{anka::TokenType::SentenceEnd, 14, 0}});
+
+  check_tokens("  (1 2 3)\n  (1 2 3)", {
+                                           anka::Token{anka::TokenType::ArrayStart, 2, 1},
+                                           anka::Token{anka::TokenType::NumberInt, 3, 1},
+                                           anka::Token{anka::TokenType::NumberInt, 5, 1},
+                                           anka::Token{anka::TokenType::NumberInt, 7, 1},
+                                           anka::Token{anka::TokenType::ArrayEnd, 8, 1},
+                                           anka::Token{anka::TokenType::SentenceEnd, 9, 1},
+                                           anka::Token{anka::TokenType::ArrayStart, 12, 1},
+                                           anka::Token{anka::TokenType::NumberInt, 13, 1},
+                                           anka::Token{anka::TokenType::NumberInt, 15, 1},
+                                           anka::Token{anka::TokenType::NumberInt, 17, 1},
+                                           anka::Token{anka::TokenType::ArrayEnd, 18, 1},
+                                           anka::Token{anka::TokenType::SentenceEnd, 19, 0},
+                                       });
 }

@@ -1,5 +1,6 @@
 target
 x64
 .vs
+vcpkg_installed
 
 *.user

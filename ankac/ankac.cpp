@@ -1,3 +1,8 @@
+#ifndef DOCTEST_CONFIG_DISABLE
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <doctest/doctest.h>
+#endif
+
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -20,6 +25,7 @@ std::string read_file(const char *filename)
   return str;
 }
 
+#ifdef DOCTEST_CONFIG_DISABLE
 int main(int argc, char *argv[])
 {
   if (argc != 2)
@@ -49,3 +55,4 @@ int main(int argc, char *argv[])
     std::cerr << std::format("Token error at {} character: {}.\n", err.pos, err.ch);
   }
 }
+#endif
