@@ -14,6 +14,8 @@
 
 #include <argumentum/argparse.h>
 
+#include <replxx.hxx>
+
 #include "ast.h"
 #include "executor.h"
 #include "tokenizer.h"
@@ -31,20 +33,13 @@ auto readFile(const char *filename) -> std::string
   return str;
 }
 
-auto executeFile(const std::string &filename) -> void
+auto execute(anka::Context &&context, const std::string_view content) -> std::optional<anka::Context>
 {
-  std::cout << "anka: " << std::format("Processing file: {}.\n", filename);
-  if (!std::filesystem::exists(filename))
-  {
-    throw std::runtime_error("File does not exist.");
-  }
-
-  auto content = readFile(filename.c_str());
+  anka::AST ast;
   try
   {
-    anka::Context context;
     auto tokens = anka::extractTokens(content);
-    auto ast = anka::parseAST(content, tokens, std::move(context));
+    ast = anka::parseAST(content, tokens, std::move(context));
     auto wordOpt = anka::execute(ast);
 
     if (wordOpt.has_value())
@@ -55,10 +50,13 @@ auto executeFile(const std::string &filename) -> void
     {
       std::cout << "No result.\n";
     }
+
+    return ast.context;
   }
   catch (const anka::TokenizerError &err)
   {
     std::cerr << std::format("Token error at {} character: {}.\n", err.pos, err.ch);
+    return std::nullopt;
   }
   catch (const anka::ASTError &err)
   {
@@ -68,17 +66,67 @@ auto executeFile(const std::string &filename) -> void
       auto t = err.tokenOpt.value();
       std::cerr << std::format("Token start: {}, length: {}.\n", t.token_start, t.len);
     }
+    return std::nullopt;
   }
   catch (const anka::ExecutionError &err)
   {
-    std::cerr << err.msg;
+    std::cerr << err.msg << "\n";
     if (err.word1.has_value())
     {
-      std::cerr << std::format("word: {}\n", toString(err.context, err.word1.value()));
+      std::cerr << std::format("word: {}\n", toString(ast.context, err.word1.value()));
     }
     if (err.word2.has_value())
     {
-      std::cerr << std::format("word: {}\n", toString(err.context, err.word2.value()));
+      std::cerr << std::format("word: {}\n", toString(ast.context, err.word2.value()));
+    }
+    return std::nullopt;
+  }
+}
+
+auto intrepretRepl(anka::Context &&context) -> void
+{
+  using Replxx = replxx::Replxx;
+  Replxx rx;
+
+  std::string prompt = "\x1b[1;32manka\x1b[0m> ";
+
+  for (;;)
+  {
+    char const *cinput{nullptr};
+
+    do
+    {
+      cinput = rx.input(prompt);
+    } while ((cinput == nullptr) && (errno == EAGAIN));
+
+    if (cinput == nullptr)
+    {
+      break;
+    }
+
+    std::string input{cinput};
+
+    if (input.empty())
+    {
+      // user hit enter on an empty line
+
+      continue;
+    }
+    else if (input.compare(0, 5, ".quit") == 0 || input.compare(0, 5, ".exit") == 0)
+    {
+      // exit the repl
+
+      rx.history_add(input);
+      break;
+    }
+    else
+    {
+      auto contextOpt = execute(std::move(context), input);
+      if (contextOpt.has_value())
+      {
+        context = std::move(contextOpt.value());
+      }
+      rx.history_add(input);
     }
   }
 }
@@ -88,23 +136,41 @@ int main(int argc, char *argv[])
   using namespace argumentum;
 
   std::optional<std::string> filenameOpt;
+  auto runInterpreter = false;
 
   auto parser = argument_parser{};
   auto params = parser.params();
   parser.config().program(argv[0]).description("Anka");
   params.add_parameter(filenameOpt, "--filename", "-f").nargs(1).help("File name to process");
+  params.add_parameter(runInterpreter, "--interpreter", "-i").nargs(0).help("Run the interpreter");
 
   if (!parser.parse_args(argc, argv))
     return -1;
 
+  anka::Context context;
+
   if (filenameOpt.has_value())
   {
-    executeFile(filenameOpt.value());
+    const auto filename = filenameOpt.value();
+    std::cout << "anka: " << std::format("Processing file: {}.\n", filename);
+    if (!std::filesystem::exists(filename))
+    {
+      throw std::runtime_error("File does not exist.");
+    }
+
+    auto content = readFile(filename.c_str());
+
+    auto contextOpt = execute(std::move(context), content);
+    if (!contextOpt.has_value())
+    {
+      return -1;
+    }
+    context = std::move(contextOpt.value());
   }
-  else
+
+  if (runInterpreter)
   {
-    std::cerr << "A filename is needed to process.";
-    return -1;
+    intrepretRepl(std::move(context));
   }
 }
 

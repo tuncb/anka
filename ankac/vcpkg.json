@@ -6,6 +6,7 @@
     "doctest",
     "range-v3",
     "fmt",
-    "argumentum"
+    "argumentum",
+    "replxx"
   ]
 }
