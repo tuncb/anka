@@ -76,4 +76,25 @@ TEST_CASE("multi sentence")
   CHECK_EQ(ast.sentences[1].words, std::vector<Word>{{WordType::IntegerNumber, 1}, {WordType::IntegerArray, 1}});
 }
 
+TEST_CASE("names")
+{
+  using namespace anka;
+
+  auto ast = toAST("add ioata (10 20 30)\n ioata 50 (1 2 3)");
+  REQUIRE_EQ(ast.sentences.size(), 2);
+  REQUIRE_EQ(ast.context.integerNumbers.size(), 1);
+  REQUIRE_EQ(ast.context.integerArrays.size(), 2);
+  REQUIRE_EQ(ast.context.names.size(), 3);
+
+  CHECK_EQ(ast.context.integerNumbers, std::vector<int>{50});
+  CHECK_EQ(ast.context.integerArrays[0], std::vector<int>{10, 20, 30});
+  CHECK_EQ(ast.context.integerArrays[1], std::vector<int>{1, 2, 3});
+  CHECK_EQ(ast.context.names, std::vector<std::string>{"add", "ioata", "ioata"});
+
+  CHECK_EQ(ast.sentences[0].words,
+           std::vector<Word>{{WordType::Name, 0}, {WordType::Name, 1}, {WordType::IntegerArray, 0}});
+  CHECK_EQ(ast.sentences[1].words,
+           std::vector<Word>{{WordType::Name, 2}, {WordType::IntegerNumber, 0}, {WordType::IntegerArray, 1}});
+}
+
 #endif

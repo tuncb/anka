@@ -19,7 +19,15 @@ enum class WordType
 {
   IntegerNumber,
   IntegerArray,
+  Name,
   Context
+};
+
+struct Function
+{
+  void* ptr = nullptr;
+  std::vector<WordType> arguments;
+  WordType returnType;
 };
 
 struct Word
@@ -39,6 +47,7 @@ struct Context
 {
   std::vector<int> integerNumbers;
   std::vector<std::vector<int>> integerArrays;
+  std::vector<std::string> names;
 };
 
 struct AST

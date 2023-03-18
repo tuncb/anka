@@ -37,6 +37,12 @@ TEST_CASE("single values")
   CHECK_EQ(executeText("1  \n  2"), "2");
 }
 
+TEST_CASE("ioata")
+{
+  CHECK_EQ(executeText("ioata 5"), "(1 2 3 4 5)");
+  CHECK_THROWS_AS(executeText("ioata (1 2 3)"), const anka::ExecutionError &);
+}
+
 TEST_CASE("mismatch errors")
 {
   CHECK_THROWS_AS(executeText("10 20"), const anka::ExecutionError &);

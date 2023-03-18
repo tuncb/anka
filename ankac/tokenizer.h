@@ -17,7 +17,8 @@ enum class TokenType
   ArrayStart,
   NumberInt,
   ArrayEnd,
-  SentenceEnd
+  SentenceEnd,
+  Name,
 };
 
 struct Token

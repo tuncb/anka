@@ -188,11 +188,14 @@
     <ClCompile Include="ast_tests.cpp" />
     <ClCompile Include="executor.cpp" />
     <ClCompile Include="executor_tests.cpp" />
+    <ClCompile Include="internal_functions.cpp" />
     <ClCompile Include="tokenizer.cpp" />
+    <ClCompile Include="tokenizer_tests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ast.h" />
     <ClInclude Include="executor.h" />
+    <ClInclude Include="internal_functions.h" />
     <ClInclude Include="tokenizer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

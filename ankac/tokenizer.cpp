@@ -2,10 +2,6 @@
 
 #include <cctype>
 
-#include <doctest/doctest.h>
-
-#include <range/v3/view/zip.hpp>
-
 auto isNumber(const char c) -> bool
 {
   return c >= '0' && c <= '9';
@@ -18,7 +14,13 @@ auto isEndLine(const char c) -> bool
 
 auto isSpace(const char c) -> bool
 {
-  return std::isspace(static_cast<unsigned char>(c));
+  return std::isblank(static_cast<unsigned char>(c));
+}
+
+auto isName(const char c) -> bool
+{
+  auto ch = static_cast<unsigned char>(c);
+  return std::isalpha(ch) || std::isdigit(ch);
 }
 
 template <typename Predicate>
@@ -37,6 +39,8 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
   constexpr const char array_start_char = '(';
   constexpr const char array_end_char = ')';
 
+  auto needSeparator = false;
+
   size_t i = 0;
   while (i < content.size())
   {
@@ -44,22 +48,36 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
     if (ch == array_start_char)
     {
       tokens.push_back(Token{TokenType::ArrayStart, i, 1});
+      needSeparator = false;
     }
     else if (ch == array_end_char)
     {
       tokens.push_back(Token{TokenType::ArrayEnd, i, 1});
+      needSeparator = false;
     }
     else if (isNumber(ch))
     {
+      if (needSeparator)
+        throw TokenizerError{i, ch};
       tokens.push_back(Token{TokenType::NumberInt, i, parseContinuously(isNumber, content, i)});
+      needSeparator = true;
+    }
+    else if (isName(ch))
+    {
+      if (needSeparator)
+        throw TokenizerError{i, ch};
+      tokens.push_back(Token{TokenType::Name, i, parseContinuously(isName, content, i)});
+      needSeparator = true;
     }
     else if (isEndLine(ch))
     {
       tokens.push_back(Token{TokenType::SentenceEnd, i, parseContinuously(isEndLine, content, i)});
+      needSeparator = false;
     }
     else if (isSpace(ch))
     {
       i = i + parseContinuously(isSpace, content, i);
+      needSeparator = false;
       continue;
     }
     else
@@ -75,53 +93,4 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
     tokens.push_back(Token{TokenType::SentenceEnd, content.size(), 0});
   }
   return tokens;
-}
-
-// Tests
-
-auto checkTokens(const std::string_view text, const std::vector<anka::Token> &expected) -> void
-{
-  auto tokens = anka::extractTokens(text);
-  for (auto test_pair : ranges::views::zip(tokens, expected))
-  {
-    CHECK_EQ(std::get<0>(test_pair), std::get<1>(test_pair));
-  }
-}
-
-TEST_CASE("test array tokenizing")
-{
-  checkTokens("(1 2 3)",
-              {anka::Token{anka::TokenType::ArrayStart, 0, 1}, anka::Token{anka::TokenType::NumberInt, 1, 1},
-               anka::Token{anka::TokenType::NumberInt, 3, 1}, anka::Token{anka::TokenType::NumberInt, 5, 1},
-               anka::Token{anka::TokenType::ArrayEnd, 6, 1}, anka::Token{anka::TokenType::SentenceEnd, 7, 0}});
-
-  checkTokens(" (123 2  3444)",
-              {anka::Token{anka::TokenType::ArrayStart, 1, 1}, anka::Token{anka::TokenType::NumberInt, 2, 3},
-               anka::Token{anka::TokenType::NumberInt, 6, 1}, anka::Token{anka::TokenType::NumberInt, 9, 4},
-               anka::Token{anka::TokenType::ArrayEnd, 13, 1}, anka::Token{anka::TokenType::SentenceEnd, 14, 0}});
-
-  checkTokens("  (1 2 3)\n  (1 2 3)", {
-                                          anka::Token{anka::TokenType::ArrayStart, 2, 1},
-                                          anka::Token{anka::TokenType::NumberInt, 3, 1},
-                                          anka::Token{anka::TokenType::NumberInt, 5, 1},
-                                          anka::Token{anka::TokenType::NumberInt, 7, 1},
-                                          anka::Token{anka::TokenType::ArrayEnd, 8, 1},
-                                          anka::Token{anka::TokenType::SentenceEnd, 9, 1},
-                                          anka::Token{anka::TokenType::ArrayStart, 12, 1},
-                                          anka::Token{anka::TokenType::NumberInt, 13, 1},
-                                          anka::Token{anka::TokenType::NumberInt, 15, 1},
-                                          anka::Token{anka::TokenType::NumberInt, 17, 1},
-                                          anka::Token{anka::TokenType::ArrayEnd, 18, 1},
-                                          anka::Token{anka::TokenType::SentenceEnd, 19, 0},
-                                      });
-}
-
-TEST_CASE("no exceptions")
-{
-  CHECK_NOTHROW(anka::extractTokens("40 (10 20 30)\n 50 (1 2 3)"));
-}
-
-TEST_CASE("test tokenizing error: foreign character")
-{
-  CHECK_THROWS_AS(anka::extractTokens("(12 23 45t)"), const anka::TokenizerError &);
 }

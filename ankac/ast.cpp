@@ -34,6 +34,15 @@ auto addIntegerWord(const std::string_view content, anka::Context &context, Toke
   return {anka::WordType::IntegerNumber, context.integerNumbers.size() - 1};
 }
 
+auto addNameWord(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter)
+    -> anka::Word
+{
+  auto token = *(tokenIter++);
+  auto value = std::string(content.data() + token.token_start, content.data() + token.token_start + token.len);
+  context.names.push_back(value);
+  return {anka::WordType::Name, context.names.size() - 1};
+}
+
 auto addArrayWord(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
                   TokenForwardIterator auto tokensEnd) -> anka::Word
 {
@@ -93,6 +102,9 @@ auto extractSentence(const std::string_view content, anka::Context &context, Tok
     case TokenType::NumberInt:
       sentence.words.emplace_back(addIntegerWord(content, context, tokenIter));
       break;
+    case TokenType::Name:
+      sentence.words.emplace_back(addNameWord(content, context, tokenIter));
+      break;
     case TokenType::ArrayStart:
       sentence.words.emplace_back(addArrayWord(content, context, tokenIter, tokensEnd));
       break;
@@ -130,6 +142,8 @@ auto anka::toString(const anka::Context &context, const anka::Word &word) -> std
     auto &v = context.integerArrays[word.index];
     return fmt::format("({})", fmt::join(v, " "));
   }
+  case WordType::Name:
+    return context.names[word.index];
   default:
     return "";
   }
