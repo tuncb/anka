@@ -1,4 +1,7 @@
 #include "tokenizer.h"
+
+#include <cctype>
+
 #include <doctest/doctest.h>
 
 #include <range/v3/view/zip.hpp>
@@ -15,7 +18,7 @@ auto isEndLine(const char c) -> bool
 
 auto isSpace(const char c) -> bool
 {
-  return c == ' ' || c == '\t';
+  return std::isspace(static_cast<unsigned char>(c));
 }
 
 template <typename Predicate>
