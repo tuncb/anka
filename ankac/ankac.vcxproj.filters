@@ -27,12 +27,18 @@
     <ClCompile Include="ast_tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="executor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tokenizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ast.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="executor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

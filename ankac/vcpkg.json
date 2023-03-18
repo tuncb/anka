@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "dependencies": [
     "doctest",
-    "range-v3"
+    "range-v3",
+     "fmt"
   ]
 }
