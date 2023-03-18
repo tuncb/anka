@@ -4,11 +4,11 @@
 #include <format>
 #include <iterator>
 
+#include <fmt/ranges.h>
+
 template <class T>
 concept TokenForwardIterator =
     std::forward_iterator<T> && std::is_same_v<typename std::iterator_traits<T>::value_type, anka::Token>;
-
-
 
 auto toInt(const std::string_view content, anka::Token token) -> int
 {
@@ -117,4 +117,21 @@ auto anka::createAST(const std::string_view content, std::span<Token> tokens) ->
   }
 
   return mainContext;
+}
+
+auto anka::toString(const anka::Context &context, const anka::Word &word) -> std::string
+{
+  using namespace anka;
+
+  switch (word.type)
+  {
+  case WordType::IntegerNumber:
+    return std::format("{}", context.integerNumbers[word.index]);
+  case WordType::IntegerArray: {
+    auto &v = context.integerArrays[word.index];
+    return fmt::format("({})", fmt::join(v, " "));
+  }
+  default:
+    return "";
+  }
 }

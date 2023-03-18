@@ -30,6 +30,9 @@
     <ClCompile Include="executor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="executor_tests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tokenizer.h">

@@ -45,4 +45,6 @@ struct Context
 
 auto createAST(std::string_view content, std::span<Token> tokens) -> Context;
 
+auto toString(const anka::Context &context, const anka::Word &word) -> std::string;
+
 } // namespace anka

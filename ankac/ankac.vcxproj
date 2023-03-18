@@ -187,6 +187,7 @@
     <ClCompile Include="ast.cpp" />
     <ClCompile Include="ast_tests.cpp" />
     <ClCompile Include="executor.cpp" />
+    <ClCompile Include="executor_tests.cpp" />
     <ClCompile Include="tokenizer.cpp" />
   </ItemGroup>
   <ItemGroup>

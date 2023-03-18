@@ -11,8 +11,6 @@
 #include <streambuf>
 #include <string>
 
-#include <fmt/ranges.h>
-
 #include "ast.h"
 #include "executor.h"
 #include "tokenizer.h"
@@ -28,23 +26,6 @@ auto readFile(const char *filename) -> std::string
 
   str.assign((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
   return str;
-}
-
-auto toString(const anka::Context &context, const anka::Word &word) -> std::string
-{
-  using namespace anka;
-
-  switch (word.type)
-  {
-  case WordType::IntegerNumber:
-    return std::format("{}", context.integerNumbers[word.index]);
-  case WordType::IntegerArray: {
-    auto &v = context.integerArrays[word.index];
-    return fmt::format("({})", fmt::join(v, " "));
-  }
-  default:
-    return "";
-  }
 }
 
 #ifdef DOCTEST_CONFIG_DISABLE
@@ -93,6 +74,18 @@ int main(int argc, char *argv[])
     {
       auto t = err.tokenOpt.value();
       std::cerr << std::format("Token start: {}, length: {}.\n", t.token_start, t.len);
+    }
+  }
+  catch (const anka::ExecutionError& err)
+  {
+    std::cerr << err.msg;
+    if (err.word1.has_value()) 
+    {
+      std::cerr << std::format("word: {}\n", toString(err.context, err.word1.value()));
+    }
+    if (err.word2.has_value())
+    {
+      std::cerr << std::format("word: {}\n", toString(err.context, err.word2.value()));
     }
   }
 }

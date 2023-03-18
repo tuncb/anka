@@ -7,7 +7,7 @@
 
 auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) -> anka::Word
 {
-  throw anka::ExecutionError{w1, w2, "Could not fold words."};
+  throw anka::ExecutionError{context, w1, w2, "Could not fold words."};
 }
 
 auto anka::execute(Context &context) -> std::optional<Word>
@@ -32,3 +32,4 @@ auto anka::execute(Context &context) -> std::optional<Word>
 
   return word;
 }
+

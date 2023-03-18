@@ -9,6 +9,7 @@ namespace anka
 
 struct ExecutionError
 {
+  Context& context;
   std::optional<Word> word1;
   std::optional<Word> word2;
 
