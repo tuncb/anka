@@ -5,6 +5,7 @@
   "dependencies": [
     "doctest",
     "range-v3",
-     "fmt"
+    "fmt",
+    "argumentum"
   ]
 }

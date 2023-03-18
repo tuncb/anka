@@ -3,12 +3,16 @@
 #include <doctest/doctest.h>
 #endif
 
+#ifdef DOCTEST_CONFIG_DISABLE
+
 #include <filesystem>
 #include <format>
 #include <fstream>
 #include <iostream>
 #include <streambuf>
 #include <string>
+
+#include <argumentum/argparse.h>
 
 #include "ast.h"
 #include "executor.h"
@@ -27,26 +31,15 @@ auto readFile(const char *filename) -> std::string
   return str;
 }
 
-#ifdef DOCTEST_CONFIG_DISABLE
-int main(int argc, char *argv[])
+auto executeFile(const std::string &filename) -> void
 {
-  if (argc != 2)
-  {
-    std::cerr << "anka: expected a filename to process.\n";
-    return -1;
-  }
-
-  const auto filename = std::string(argv[1]);
   std::cout << "anka: " << std::format("Processing file: {}.\n", filename);
-
   if (!std::filesystem::exists(filename))
   {
-    std::cerr << std::format("anka: I could not find file: {}.\n", filename);
-    return -1;
+    throw std::runtime_error("File does not exist.");
   }
 
   auto content = readFile(filename.c_str());
-
   try
   {
     auto tokens = anka::extractTokens(content);
@@ -75,10 +68,10 @@ int main(int argc, char *argv[])
       std::cerr << std::format("Token start: {}, length: {}.\n", t.token_start, t.len);
     }
   }
-  catch (const anka::ExecutionError& err)
+  catch (const anka::ExecutionError &err)
   {
     std::cerr << err.msg;
-    if (err.word1.has_value()) 
+    if (err.word1.has_value())
     {
       std::cerr << std::format("word: {}\n", toString(err.context, err.word1.value()));
     }
@@ -88,4 +81,30 @@ int main(int argc, char *argv[])
     }
   }
 }
+
+int main(int argc, char *argv[])
+{
+  using namespace argumentum;
+
+  std::optional<std::string> filenameOpt;
+
+  auto parser = argument_parser{};
+  auto params = parser.params();
+  parser.config().program(argv[0]).description("Anka");
+  params.add_parameter(filenameOpt, "--filename", "-f").nargs(1).help("File name to process");
+
+  if (!parser.parse_args(argc, argv))
+    return -1;
+
+  if (filenameOpt.has_value())
+  {
+    executeFile(filenameOpt.value());
+  }
+  else
+  {
+    std::cerr << "A filename is needed to process.";
+    return -1;
+  }
+}
+
 #endif
