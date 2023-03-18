@@ -2,23 +2,23 @@
 
 #include <numeric>
 
-#include <range/v3/view/reverse.hpp>
 #include <range/v3/view/drop.hpp>
+#include <range/v3/view/reverse.hpp>
 
 auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) -> anka::Word
 {
   throw anka::ExecutionError{context, w1, w2, "Could not fold words."};
 }
 
-auto anka::execute(Context &context) -> std::optional<Word>
+auto anka::execute(AST &ast) -> std::optional<Word>
 {
   using namespace ranges;
 
-  if (context.sentences.empty())
+  if (ast.sentences.empty())
     return std::nullopt;
 
   std::optional<Word> word = std::nullopt;
-  for (const auto &sentence : context.sentences)
+  for (const auto &sentence : ast.sentences)
   {
     if (sentence.words.empty())
       continue;
@@ -27,9 +27,8 @@ auto anka::execute(Context &context) -> std::optional<Word>
     auto rv = sentence.words | views::reverse | views::drop(1);
 
     word = std::accumulate(rv.begin(), rv.end(), init,
-                           [&context](const Word &w1, const Word &w2) { return fold(context, w2, w1); });
+                           [&ast](const Word &w1, const Word &w2) { return fold(ast.context, w2, w1); });
   }
 
   return word;
 }
-

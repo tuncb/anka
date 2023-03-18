@@ -107,16 +107,15 @@ auto extractSentence(const std::string_view content, anka::Context &context, Tok
   return sentence;
 }
 
-auto anka::createAST(const std::string_view content, std::span<Token> tokens) -> Context
+auto anka::parseAST(const std::string_view content, std::span<Token> tokens, Context &&context) -> AST
 {
-  Context mainContext;
-
+  std::vector<Sentence> sentences;
   for (auto tokenIter = tokens.begin(); tokenIter != tokens.end();)
   {
-    mainContext.sentences.emplace_back(extractSentence(content, mainContext, tokenIter, tokens.end()));
+    sentences.emplace_back(extractSentence(content, context, tokenIter, tokens.end()));
   }
 
-  return mainContext;
+  return {std::move(context), sentences};
 }
 
 auto anka::toString(const anka::Context &context, const anka::Word &word) -> std::string

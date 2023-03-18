@@ -37,13 +37,17 @@ struct Sentence
 
 struct Context
 {
-  std::vector<Sentence> sentences;
-
   std::vector<int> integerNumbers;
   std::vector<std::vector<int>> integerArrays;
 };
 
-auto createAST(std::string_view content, std::span<Token> tokens) -> Context;
+struct AST
+{
+  Context context;
+  std::vector<Sentence> sentences;
+};
+
+auto parseAST(const std::string_view content, std::span<Token> tokens, Context &&context) -> AST;
 
 auto toString(const anka::Context &context, const anka::Word &word) -> std::string;
 

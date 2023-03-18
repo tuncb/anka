@@ -9,12 +9,12 @@ namespace anka
 
 struct ExecutionError
 {
-  Context& context;
+  Context &context;
   std::optional<Word> word1;
   std::optional<Word> word2;
 
   std::string msg;
 };
 
-auto execute(Context &context) -> std::optional<Word>;
+auto execute(AST &ast) -> std::optional<Word>;
 } // namespace anka

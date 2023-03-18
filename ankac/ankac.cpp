@@ -42,13 +42,14 @@ auto executeFile(const std::string &filename) -> void
   auto content = readFile(filename.c_str());
   try
   {
+    anka::Context context;
     auto tokens = anka::extractTokens(content);
-    auto mainContext = anka::createAST(content, tokens);
-    auto wordOpt = anka::execute(mainContext);
+    auto ast = anka::parseAST(content, tokens, std::move(context));
+    auto wordOpt = anka::execute(ast);
 
     if (wordOpt.has_value())
     {
-      std::cout << std::format("Result: {}\n", toString(mainContext, wordOpt.value()));
+      std::cout << std::format("Result: {}\n", toString(ast.context, wordOpt.value()));
     }
     else
     {

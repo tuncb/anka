@@ -11,17 +11,19 @@
 TEST_CASE("empty context")
 {
   anka::Context context;
-  CHECK_FALSE(anka::execute(context).has_value());
+  anka::AST ast{context, std::vector<anka::Sentence>{}};
+  CHECK_FALSE(anka::execute(ast).has_value());
 }
 
 auto executeText(const std::string_view content) -> std::string
 {
+  anka::Context context;
   auto tokens = anka::extractTokens(content);
-  auto context = anka::createAST(content, tokens);
-  auto res = anka::execute(context);
+  auto ast = anka::parseAST(content, tokens, std::move(context));
+  auto res = anka::execute(ast);
   if (res.has_value())
   {
-    return anka::toString(context, res.value());
+    return anka::toString(ast.context, res.value());
   }
 
   return "";
@@ -41,6 +43,5 @@ TEST_CASE("mismatch errors")
   CHECK_THROWS_AS(executeText("10 (20 40)"), const anka::ExecutionError &);
   CHECK_THROWS_AS(executeText("(10) (20 40)"), const anka::ExecutionError &);
 }
-
 
 #endif
