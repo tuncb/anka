@@ -23,11 +23,16 @@ enum class WordType
   Context
 };
 
-struct Function
+enum class InternalFunctionType
+{
+  IntToIntArray,
+  IntToInt
+};
+
+struct InternalFunction
 {
   void* ptr = nullptr;
-  std::vector<WordType> arguments;
-  WordType returnType;
+  InternalFunctionType type;
 };
 
 struct Word

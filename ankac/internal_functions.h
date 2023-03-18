@@ -6,6 +6,6 @@
 
 namespace anka {
 
-auto getInternalFunctions() -> const std::unordered_map<std::string, anka::Function>&;
+auto getInternalFunctions() -> const std::unordered_map<std::string, anka::InternalFunction>&;
 
 }

@@ -16,14 +16,26 @@ auto ioata(int n) -> std::vector<int>
   return res;
 }
 
-auto anka::getInternalFunctions() -> const std::unordered_map<std::string, anka::Function> &
+auto inc(int n) -> int
 {
-  static std::optional<std::unordered_map<std::string, anka::Function>> functionMapOpt;
+  return n + 1;
+}
+
+auto dec(int n) -> int
+{
+  return n - 1;
+}
+
+auto anka::getInternalFunctions() -> const std::unordered_map<std::string, anka::InternalFunction> &
+{
+  static std::optional<std::unordered_map<std::string, anka::InternalFunction>> functionMapOpt;
   if (functionMapOpt.has_value())
     return functionMapOpt.value();
 
-  std::unordered_map<std::string, anka::Function> map;
-  map["ioata"] = {&ioata, {WordType::IntegerNumber}, {WordType::IntegerArray}};
+  std::unordered_map<std::string, anka::InternalFunction> map;
+  map["ioata"] = {&ioata, InternalFunctionType::IntToIntArray};
+  map["inc"] = {&inc, InternalFunctionType::IntToInt};
+  map["dec"] = {&dec, InternalFunctionType::IntToInt};
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();
