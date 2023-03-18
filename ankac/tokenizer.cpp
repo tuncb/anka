@@ -113,6 +113,11 @@ TEST_CASE("test array tokenizing")
                                       });
 }
 
+TEST_CASE("no exceptions")
+{
+  CHECK_NOTHROW(anka::extractTokens("40 (10 20 30)\n 50 (1 2 3)"));
+}
+
 TEST_CASE("test tokenizing error: foreign character")
 {
   CHECK_THROWS_AS(anka::extractTokens("(12 23 45t)"), const anka::TokenizerError &);

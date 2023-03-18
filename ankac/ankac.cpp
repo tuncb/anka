@@ -10,6 +10,7 @@
 #include <streambuf>
 #include <string>
 
+#include "ast.h"
 #include "tokenizer.h"
 
 std::string readFile(const char *filename)
@@ -48,11 +49,20 @@ int main(int argc, char *argv[])
   try
   {
     auto tokens = anka::extractTokens(content);
-    std::cout << std::format("Parsed {} tokens.\n", tokens.size());
+    auto mainContext = anka::createAST(content, tokens);
   }
-  catch (anka::TokenizerError &err)
+  catch (const anka::TokenizerError &err)
   {
     std::cerr << std::format("Token error at {} character: {}.\n", err.pos, err.ch);
+  }
+  catch (const anka::ASTError &err)
+  {
+    std::cerr << std::format("AST error: {}.\n", err.message);
+    if(err.tokenOpt.has_value())
+    {
+      auto t = err.tokenOpt.value();
+      std::cerr << std::format("Token start: {}, length: {}.\n", t.token_start, t.len);
+    }
   }
 }
 #endif

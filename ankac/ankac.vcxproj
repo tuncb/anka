@@ -184,9 +184,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ankac.cpp" />
+    <ClCompile Include="ast.cpp" />
+    <ClCompile Include="ast_tests.cpp" />
     <ClCompile Include="tokenizer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ast.h" />
     <ClInclude Include="tokenizer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
