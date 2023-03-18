@@ -44,11 +44,7 @@ auto execute(anka::Context &&context, const std::string_view content) -> std::op
 
     if (wordOpt.has_value())
     {
-      std::cout << std::format("Result: {}\n", toString(ast.context, wordOpt.value()));
-    }
-    else
-    {
-      std::cout << "No result.\n";
+      std::cout << std::format("{}\n", toString(ast.context, wordOpt.value()));
     }
 
     return ast.context;
@@ -108,8 +104,6 @@ auto intrepretRepl(anka::Context &&context) -> void
 
     if (input.empty())
     {
-      // user hit enter on an empty line
-
       continue;
     }
     else if (input.compare(0, 5, ".quit") == 0 || input.compare(0, 5, ".exit") == 0)
@@ -118,6 +112,22 @@ auto intrepretRepl(anka::Context &&context) -> void
 
       rx.history_add(input);
       break;
+    }
+    else if (input.compare(0, 6, ".clear") == 0)
+    {
+      rx.clear_screen();
+      rx.history_add(input);
+    }
+    else if (input.compare(0, 8, ".history") == 0)
+    {
+      // display the current history
+      Replxx::HistoryScan hs(rx.history_scan());
+      for (int i(0); hs.next(); ++i)
+      {
+        std::cout << std::setw(4) << i << ": " << hs.get().text() << "\n";
+      }
+
+      rx.history_add(input);
     }
     else
     {
