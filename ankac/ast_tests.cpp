@@ -59,6 +59,43 @@ TEST_CASE("number array combos")
                                     {WordType::IntegerArray, 1}});
 }
 
+TEST_CASE("simple tuple")
+{
+  using namespace anka;
+
+  auto ast = toAST("[1 2 3]");
+  REQUIRE_EQ(ast.sentences.size(), 1);
+  REQUIRE_EQ(ast.context.integerNumbers.size(), 3);
+  REQUIRE_EQ(ast.context.tuples.size(), 1);
+
+  CHECK_EQ(ast.context.integerNumbers, std::vector<int>{1, 2, 3});
+
+  CHECK_EQ(ast.context.tuples[0],
+           std::vector<Word>{{WordType::IntegerNumber, 0}, {WordType::IntegerNumber, 1}, {WordType::IntegerNumber, 2}});
+  CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::Tuple, 0}});
+}
+
+TEST_CASE("complex tuple")
+{
+  using namespace anka;
+
+  auto ast = toAST("[1 (1 2) [3 4] 11]");
+  REQUIRE_EQ(ast.sentences.size(), 1);
+  REQUIRE_EQ(ast.context.integerNumbers.size(), 4);
+  REQUIRE_EQ(ast.context.tuples.size(), 2);
+  REQUIRE_EQ(ast.context.integerArrays.size(), 1);
+
+  CHECK_EQ(ast.context.integerArrays[0], std::vector<int>{1, 2});
+  CHECK_EQ(ast.context.integerNumbers, std::vector<int>{1, 3, 4, 11});
+
+  CHECK_EQ(ast.context.tuples[0], std::vector<Word>{{WordType::IntegerNumber, 1}, {WordType::IntegerNumber, 2}});
+  CHECK_EQ(ast.context.tuples[1], std::vector<Word>{{WordType::IntegerNumber, 0},
+                                                    {WordType::IntegerArray, 0},
+                                                    {WordType::Tuple, 0},
+                                                    {WordType::IntegerNumber, 3}});
+  CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::Tuple, 1}});
+}
+
 TEST_CASE("multi sentence")
 {
   using namespace anka;

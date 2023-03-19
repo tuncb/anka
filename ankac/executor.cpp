@@ -7,11 +7,6 @@
 
 #include "internal_functions.h"
 
-typedef std::vector<int> (*IntToIntVectorFunc)(int);
-typedef int (*IntToIntFunc)(int);
-typedef int (*IntVectorToIntFunc)(const std::vector<int> &);
-typedef std::vector<int> (*IntVectorToIntArrayFunc)(const std::vector<int> &);
-
 auto findFunction(const std::string &name) -> std::optional<anka::InternalFunction>
 {
   const auto &internalFunctions = anka::getInternalFunctions();
@@ -22,35 +17,24 @@ auto findFunction(const std::string &name) -> std::optional<anka::InternalFuncti
   return std::nullopt;
 }
 
-auto foldIntToIntArrayFunction(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
-    -> std::optional<anka::Word>
-{
-  if (input.type != anka::WordType::IntegerNumber)
-    return std::nullopt;
-
-  auto funcptr = (IntToIntVectorFunc)func.ptr;
-  auto output = funcptr(context.integerNumbers[input.index]);
-
-  return anka::createWord(context, std::move(output));
-}
-
 auto foldIntToIntFunction(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
     -> std::optional<anka::Word>
 {
+  typedef int (*IntToIntFunc)(int);
   auto funcptr = (IntToIntFunc)func.ptr;
 
-  if (input.type == anka::WordType::IntegerNumber)
+  if (auto intOpt = extractValue<int>(context, input, 0); intOpt)
   {
-    auto value = funcptr(context.integerNumbers[input.index]);
+    auto value = funcptr(intOpt.value());
     return anka::createWord(context, value);
   }
 
-  if (input.type == anka::WordType::IntegerArray)
+  if (auto arrOpt = extractValue<const std::vector<int> &>(context, input, 0); arrOpt)
   {
-    const auto& vec = context.integerArrays[input.index];
+    const auto &vec = arrOpt.value();
     std::vector<int> output;
     output.reserve(vec.size());
-    for (auto inp: vec)
+    for (auto inp : vec)
     {
       output.push_back(funcptr(inp));
     }
@@ -59,28 +43,18 @@ auto foldIntToIntFunction(anka::Context &context, const anka::Word &input, const
   return std::nullopt;
 }
 
-auto foldIntArrayToIntFunction(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
-    -> std::optional<anka::Word>
+template <typename T, typename R>
+auto foldSingleArgumentNoRankPolyFunction(anka::Context &context, const anka::Word &input,
+                                          const anka::InternalFunction &func) -> std::optional<anka::Word>
 {
-  if (input.type != anka::WordType::IntegerArray)
+  const auto &valOpt = extractValue<T>(context, input, 0);
+  if (!valOpt)
     return std::nullopt;
 
-  auto funcptr = (IntVectorToIntFunc)func.ptr;
-  auto value = funcptr(context.integerArrays[input.index]);
+  typedef R (*RealFuncType)(T);
 
-  context.integerNumbers.push_back(value);
-  return anka::Word{anka::WordType::IntegerNumber, context.integerNumbers.size() - 1};
-}
-
-auto foldIntArrayToIntArrayFunction(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
-    -> std::optional<anka::Word>
-{
-  if (input.type != anka::WordType::IntegerArray)
-    return std::nullopt;
-
-  auto funcptr = (IntVectorToIntArrayFunc)func.ptr;
-  auto output = funcptr(context.integerArrays[input.index]);
-
+  auto funcptr = (RealFuncType)func.ptr;
+  auto output = funcptr(valOpt.value());
   return anka::createWord(context, std::move(output));
 }
 
@@ -91,13 +65,13 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
   switch (func.type)
   {
   case InternalFunctionType::IntToIntArray:
-    return foldIntToIntArrayFunction(context, input, func);
+    return foldSingleArgumentNoRankPolyFunction<int, std::vector<int>>(context, input, func);
   case InternalFunctionType::IntToInt:
     return foldIntToIntFunction(context, input, func);
   case InternalFunctionType::IntArrayToInt:
-    return foldIntArrayToIntFunction(context, input, func);
+    return foldSingleArgumentNoRankPolyFunction<const std::vector<int> &, int>(context, input, func);
   case InternalFunctionType::IntArrayToIntArray:
-    return foldIntArrayToIntArrayFunction(context, input, func);
+    return foldSingleArgumentNoRankPolyFunction<const std::vector<int> &, std::vector<int>>(context, input, func);
   }
   return std::nullopt;
 }
@@ -107,7 +81,7 @@ auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) ->
   using namespace anka;
   if (w1.type == WordType::Name)
   {
-    auto name = context.names[w1.index];
+    const auto &name = context.names[w1.index];
     if (findFunction(name))
     {
       throw anka::ExecutionError{w1, w2, "Could not fold words."};
@@ -116,7 +90,7 @@ auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) ->
   }
   if (w2.type == WordType::Name)
   {
-    auto name = context.names[w2.index];
+    const auto &name = context.names[w2.index];
     auto functOpt = findFunction(name);
     if (functOpt)
     {
@@ -138,7 +112,7 @@ auto expandName(anka::Context &context, const anka::Word &word) -> anka::Word
   if (word.type != anka::WordType::Name)
     return word;
 
-  auto name = context.names[word.index];
+  const auto &name = context.names[word.index];
   if (!findFunction(name))
   {
     throw anka::ExecutionError{word, std::nullopt, "Could not find word."};
@@ -160,7 +134,7 @@ auto anka::execute(AST &ast) -> std::optional<Word>
     if (sentence.words.empty())
       continue;
 
-    auto init = sentence.words.back();
+    const auto &init = sentence.words.back();
     auto rv = sentence.words | views::reverse | views::drop(1);
 
     wordOpt = std::accumulate(rv.begin(), rv.end(), init,

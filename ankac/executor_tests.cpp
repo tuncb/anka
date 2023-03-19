@@ -49,6 +49,18 @@ TEST_CASE("internal functions")
   CHECK_EQ(executeText("ioata inc inc 5"), "(1 2 3 4 5 6 7)");
 }
 
+TEST_CASE("single tuple arguments")
+{
+  CHECK_EQ(executeText("ioata [5]"), "(1 2 3 4 5)");
+  CHECK_THROWS_AS(executeText("ioata [(1 2 3)]"), const anka::ExecutionError &);
+  CHECK_EQ(executeText("inc [5]"), "6");
+  CHECK_EQ(executeText("inc [(1 2 3)]"), "(2 3 4)");
+  CHECK_EQ(executeText("dec [(1 2 3)]"), "(0 1 2)");
+  CHECK_EQ(executeText("dec inc [5]"), "5");
+  CHECK_EQ(executeText("dec inc [(7 8 9)]"), "(7 8 9)");
+  CHECK_EQ(executeText("ioata inc inc [5]"), "(1 2 3 4 5 6 7)");
+}
+
 TEST_CASE("mismatch errors")
 {
   CHECK_THROWS_AS(executeText("10 20"), const anka::ExecutionError &);

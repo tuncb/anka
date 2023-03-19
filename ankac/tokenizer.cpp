@@ -38,6 +38,8 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
 
   constexpr const char array_start_char = '(';
   constexpr const char array_end_char = ')';
+  constexpr const char tuple_start_char = '[';
+  constexpr const char tuple_end_char = ']';
 
   auto needSeparator = false;
 
@@ -53,6 +55,16 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
     else if (ch == array_end_char)
     {
       tokens.push_back(Token{TokenType::ArrayEnd, i, 1});
+      needSeparator = false;
+    }
+    else if (ch == tuple_start_char)
+    {
+      tokens.push_back(Token{TokenType::TupleStart, i, 1});
+      needSeparator = false;
+    }
+    else if (ch == tuple_end_char)
+    {
+      tokens.push_back(Token{TokenType::TupleEnd, i, 1});
       needSeparator = false;
     }
     else if (isNumber(ch))

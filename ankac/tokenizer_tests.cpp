@@ -43,6 +43,44 @@ TEST_CASE("test array tokenizing")
                                       });
 }
 
+TEST_CASE("test tuple tokenizing")
+{
+  checkTokens("[1 2 3]",
+              {anka::Token{anka::TokenType::TupleStart, 0, 1}, anka::Token{anka::TokenType::NumberInt, 1, 1},
+               anka::Token{anka::TokenType::NumberInt, 3, 1}, anka::Token{anka::TokenType::NumberInt, 5, 1},
+               anka::Token{anka::TokenType::TupleEnd, 6, 1}, anka::Token{anka::TokenType::SentenceEnd, 7, 0}});
+
+  checkTokens(" [123 2  3444]",
+              {anka::Token{anka::TokenType::TupleStart, 1, 1}, anka::Token{anka::TokenType::NumberInt, 2, 3},
+               anka::Token{anka::TokenType::NumberInt, 6, 1}, anka::Token{anka::TokenType::NumberInt, 9, 4},
+               anka::Token{anka::TokenType::TupleEnd, 13, 1}, anka::Token{anka::TokenType::SentenceEnd, 14, 0}});
+
+  checkTokens("  [1 2 3]\n  [1 2 3]", {
+                                          anka::Token{anka::TokenType::TupleStart, 2, 1},
+                                          anka::Token{anka::TokenType::NumberInt, 3, 1},
+                                          anka::Token{anka::TokenType::NumberInt, 5, 1},
+                                          anka::Token{anka::TokenType::NumberInt, 7, 1},
+                                          anka::Token{anka::TokenType::TupleEnd, 8, 1},
+                                          anka::Token{anka::TokenType::SentenceEnd, 9, 1},
+                                          anka::Token{anka::TokenType::TupleStart, 12, 1},
+                                          anka::Token{anka::TokenType::NumberInt, 13, 1},
+                                          anka::Token{anka::TokenType::NumberInt, 15, 1},
+                                          anka::Token{anka::TokenType::NumberInt, 17, 1},
+                                          anka::Token{anka::TokenType::TupleEnd, 18, 1},
+                                          anka::Token{anka::TokenType::SentenceEnd, 19, 0},
+                                      });
+
+  checkTokens("[1 (1 2 3) [4 (1 2)]]",
+              {anka::Token{anka::TokenType::TupleStart, 0, 1}, anka::Token{anka::TokenType::NumberInt, 1, 1},
+               anka::Token{anka::TokenType::ArrayStart, 3, 1}, anka::Token{anka::TokenType::NumberInt, 4, 1},
+               anka::Token{anka::TokenType::NumberInt, 6, 1}, anka::Token{anka::TokenType::NumberInt, 8, 1},
+               anka::Token{anka::TokenType::ArrayEnd, 9, 1}, anka::Token{anka::TokenType::TupleStart, 11, 1},
+               anka::Token{anka::TokenType::NumberInt, 12, 1}, anka::Token{anka::TokenType::ArrayStart, 14, 1},
+               anka::Token{anka::TokenType::NumberInt, 15, 1}, anka::Token{anka::TokenType::NumberInt, 17, 1},
+               anka::Token{anka::TokenType::ArrayEnd, 18, 1}, anka::Token{anka::TokenType::TupleEnd, 19, 1},
+               anka::Token{anka::TokenType::TupleEnd, 20, 1}, anka::Token{anka::TokenType::SentenceEnd, 21, 0}});
+}
+
 TEST_CASE("test number tokenizing")
 {
   checkTokens("1 20 3",

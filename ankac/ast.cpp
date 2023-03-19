@@ -10,6 +10,10 @@ template <class T>
 concept TokenForwardIterator =
     std::forward_iterator<T> && std::is_same_v<typename std::iterator_traits<T>::value_type, anka::Token>;
 
+// Forward decleration
+auto extractTuple(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
+                  TokenForwardIterator auto tokensEnd) -> anka::Word;
+
 auto toInt(const std::string_view content, anka::Token token) -> int
 {
   auto b = &(content[token.token_start]);
@@ -48,7 +52,6 @@ auto addArrayWord(const std::string_view content, anka::Context &context, TokenF
 {
   using namespace anka;
 
-  ++tokenIter;
   if (tokenIter == tokensEnd)
   {
     throw ASTError{std::nullopt, "Array ended unexpectedly."};
@@ -89,35 +92,70 @@ auto addArrayWord(const std::string_view content, anka::Context &context, TokenF
   throw ASTError{std::nullopt, "Array ended unexpectedly."};
 }
 
+auto extractWords(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
+                  TokenForwardIterator auto tokensEnd, const std::vector<anka::TokenType> &unexpectedTypes,
+                  anka::TokenType finisherType) -> std::vector<anka::Word>
+{
+  using namespace anka;
+
+  std::vector<anka::Word> words;
+  for (; tokenIter != tokensEnd;)
+  {
+    if (tokenIter->type == finisherType)
+    {
+      ++tokenIter;
+      return words;
+    }
+    if (std::ranges::find(unexpectedTypes, tokenIter->type) != unexpectedTypes.end())
+    {
+      throw anka::ASTError{*tokenIter,
+                           std::format("Did not expect to find token: {}", anka::toString(tokenIter->type))};
+    }
+
+    switch (tokenIter->type)
+    {
+    case TokenType::NumberInt:
+      words.emplace_back(addIntegerWord(content, context, tokenIter));
+      break;
+    case TokenType::Name:
+      words.emplace_back(addNameWord(content, context, tokenIter));
+      break;
+    case TokenType::ArrayStart:
+      ++tokenIter;
+      words.emplace_back(addArrayWord(content, context, tokenIter, tokensEnd));
+      break;
+    case TokenType::TupleStart:
+      ++tokenIter;
+      words.emplace_back(extractTuple(content, context, tokenIter, tokensEnd));
+      break;
+    default:
+      throw anka::ASTError{*tokenIter,
+                           std::format("Did not expect to find token: {}", anka::toString(tokenIter->type))};
+    }
+  }
+
+  return words;
+}
+
 auto extractSentence(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
                      TokenForwardIterator auto tokensEnd) -> anka::Sentence
 {
   using namespace anka;
 
-  Sentence sentence;
-  for (; tokenIter != tokensEnd;)
-  {
-    switch (tokenIter->type)
-    {
-    case TokenType::NumberInt:
-      sentence.words.emplace_back(addIntegerWord(content, context, tokenIter));
-      break;
-    case TokenType::Name:
-      sentence.words.emplace_back(addNameWord(content, context, tokenIter));
-      break;
-    case TokenType::ArrayStart:
-      sentence.words.emplace_back(addArrayWord(content, context, tokenIter, tokensEnd));
-      break;
-    case TokenType::ArrayEnd:
-      throw ASTError(*tokenIter, "Did not expect to find an array end token");
-    case TokenType::SentenceEnd:
-      ++tokenIter;
-      return sentence;
-    }
-  }
-
+  Sentence sentence{extractWords(content, context, tokenIter, tokensEnd, {TokenType::TupleEnd, TokenType::ArrayEnd},
+                                 TokenType::SentenceEnd)};
   return sentence;
 }
+
+auto extractTuple(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
+                  TokenForwardIterator auto tokensEnd) -> anka::Word
+{
+  using namespace anka;
+
+  auto words = extractWords(content, context, tokenIter, tokensEnd, {TokenType::SentenceEnd, TokenType::ArrayEnd},
+                            TokenType::TupleEnd);
+  return createWord(context, std::move(words));
+};
 
 auto anka::parseAST(const std::string_view content, std::span<Token> tokens, Context &&context) -> AST
 {
@@ -155,8 +193,50 @@ auto anka::createWord(Context &context, int value) -> Word
   return anka::Word{anka::WordType::IntegerNumber, context.integerNumbers.size() - 1};
 }
 
+auto anka::createWord(Context &context, std::vector<anka::Word> &&vec) -> Word
+{
+  context.tuples.push_back(std::move(vec));
+  return anka::Word{anka::WordType::Tuple, context.tuples.size() - 1};
+}
+
+auto anka::toString(TokenType type) -> std::string
+{
+  switch (type)
+  {
+  case TokenType::NumberInt:
+    return "integer number";
+  case TokenType::Name:
+    return "name";
+  case TokenType::ArrayStart:
+    return "array start '('";
+  case TokenType::ArrayEnd:
+    return "array end ')'";
+  case TokenType::TupleStart:
+    return "tuple start '['";
+  case TokenType::TupleEnd:
+    return "tuple end ']'";
+  case TokenType::SentenceEnd:
+    return "sentence end";
+  default:
+    throw(std::runtime_error("Fatal error: Unexpected token type"));
+  }
+}
+
 auto anka::createWord(Context &context, std::vector<int> &&vec) -> Word
 {
   context.integerArrays.push_back(std::move(vec));
   return anka::Word{anka::WordType::IntegerArray, context.integerArrays.size() - 1};
+}
+
+auto anka::getWord(const Context &context, const Word &input, size_t index) -> std::optional<Word>
+{
+  if (input.type == WordType::Tuple)
+  {
+    const auto &tup = context.tuples[input.index];
+    if (tup.size() <= index)
+      return std::nullopt;
+    return tup[index];
+  }
+
+  return input;
 }
