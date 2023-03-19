@@ -52,6 +52,26 @@ auto sort(const std::vector<int> &vec) -> std::vector<int>
   return res;
 }
 
+auto add(int v1, int v2) -> int
+{
+  return v1 + v2;
+}
+
+auto sub(int v1, int v2) -> int
+{
+  return v1 - v2;
+}
+
+auto mul(int v1, int v2) -> int
+{
+  return v1 * v2;
+}
+
+auto div(int v1, int v2) -> int
+{
+  return v1 / v2;
+}
+
 } // namespace anka
 
 auto anka::getInternalFunctions() -> const std::unordered_map<std::string, anka::InternalFunction> &
@@ -68,6 +88,10 @@ auto anka::getInternalFunctions() -> const std::unordered_map<std::string, anka:
   map["abs"] = {&anka::abs, InternalFunctionType::IntToInt};
   map["length"] = {&anka::length, InternalFunctionType::IntArrayToInt};
   map["sort"] = {&anka::sort, InternalFunctionType::IntArrayToIntArray};
+  map["add"] = {&anka::add, InternalFunctionType::IntIntToInt};
+  map["sub"] = {&anka::sub, InternalFunctionType::IntIntToInt};
+  map["mul"] = {&anka::mul, InternalFunctionType::IntIntToInt};
+  map["div"] = {&anka::div, InternalFunctionType::IntIntToInt};
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();

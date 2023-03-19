@@ -17,33 +17,108 @@ auto findFunction(const std::string &name) -> std::optional<anka::InternalFuncti
   return std::nullopt;
 }
 
-auto foldIntToIntFunction(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
-    -> std::optional<anka::Word>
+template <typename R, typename T1, typename T2>
+auto foldTwoArgumentWithRankPolyFunction(anka::Context &context, const anka::Word &input,
+                                         const anka::InternalFunction &func) -> std::optional<anka::Word>
 {
-  typedef int (*IntToIntFunc)(int);
-  auto funcptr = (IntToIntFunc)func.ptr;
+  typedef R (*RealFuncType)(T1, T2);
+  auto funcptr = (RealFuncType)func.ptr;
 
-  if (auto intOpt = extractValue<int>(context, input, 0); intOpt)
+  auto opt1 = extractValue<T1>(context, input, 0);
+  auto opt2 = extractValue<T2>(context, input, 1);
+
+  if (opt1 && opt2)
   {
-    auto value = funcptr(intOpt.value());
+    auto value = funcptr(opt1.value(), opt2.value());
     return anka::createWord(context, value);
   }
 
-  if (auto arrOpt = extractValue<const std::vector<int> &>(context, input, 0); arrOpt)
+  auto optVec1 = extractValue<const std::vector<T1> &>(context, input, 0);
+  auto optVec2 = extractValue<const std::vector<T2> &>(context, input, 1);
+
+  if (optVec1 && optVec2)
   {
-    const auto &vec = arrOpt.value();
-    std::vector<int> output;
-    output.reserve(vec.size());
-    for (auto inp : vec)
+    auto &&vec1 = optVec1.value();
+    auto &&vec2 = optVec2.value();
+
+    if (vec1.size() != vec2.size())
+      return std::nullopt;
+
+    std::vector<R> output;
+    output.reserve(vec1.size());
+
+    for (size_t i = 0; i < vec1.size(); ++i)
     {
-      output.push_back(funcptr(inp));
+      output.emplace_back(funcptr(vec1[i], vec2[i]));
+    }
+    return anka::createWord(context, std::move(output));
+  }
+
+  if (opt1 && optVec2)
+  {
+    auto val1 = opt1.value();
+    auto &&vec2 = optVec2.value();
+
+    std::vector<R> output;
+    output.reserve(vec2.size());
+
+    for (size_t i = 0; i < vec2.size(); ++i)
+    {
+      output.emplace_back(funcptr(val1, vec2[i]));
+    }
+    return anka::createWord(context, std::move(output));
+  }
+
+  if (opt2 && optVec1)
+  {
+    auto val2 = opt2.value();
+    auto &&vec1 = optVec1.value();
+
+    std::vector<R> output;
+    output.reserve(vec1.size());
+
+    for (size_t i = 0; i < vec1.size(); ++i)
+    {
+      output.emplace_back(funcptr(vec1[i], val2));
+    }
+    return anka::createWord(context, std::move(output));
+  }
+
+  return std::nullopt;
+}
+
+template <typename R, typename T>
+auto foldSingleArgumentWithRankPolyFunction(anka::Context &context, const anka::Word &input,
+                                            const anka::InternalFunction &func) -> std::optional<anka::Word>
+{
+  typedef R (*RealFuncType)(T);
+  auto funcptr = (RealFuncType)func.ptr;
+
+  auto opt1 = extractValue<T>(context, input, 0);
+
+  if (opt1)
+  {
+    auto value = funcptr(opt1.value());
+    return anka::createWord(context, value);
+  }
+
+  auto optVec1 = extractValue<const std::vector<T> &>(context, input, 0);
+  if (optVec1)
+  {
+    auto &&vec1 = optVec1.value();
+    std::vector<R> output;
+    output.reserve(vec1.size());
+
+    for (size_t i = 0; i < vec1.size(); ++i)
+    {
+      output.emplace_back(funcptr(vec1[i]));
     }
     return anka::createWord(context, std::move(output));
   }
   return std::nullopt;
 }
 
-template <typename T, typename R>
+template <typename R, typename T>
 auto foldSingleArgumentNoRankPolyFunction(anka::Context &context, const anka::Word &input,
                                           const anka::InternalFunction &func) -> std::optional<anka::Word>
 {
@@ -65,13 +140,15 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
   switch (func.type)
   {
   case InternalFunctionType::IntToIntArray:
-    return foldSingleArgumentNoRankPolyFunction<int, std::vector<int>>(context, input, func);
+    return foldSingleArgumentNoRankPolyFunction<std::vector<int>, int>(context, input, func);
   case InternalFunctionType::IntToInt:
-    return foldIntToIntFunction(context, input, func);
+    return foldSingleArgumentWithRankPolyFunction<int, int>(context, input, func);
   case InternalFunctionType::IntArrayToInt:
-    return foldSingleArgumentNoRankPolyFunction<const std::vector<int> &, int>(context, input, func);
+    return foldSingleArgumentNoRankPolyFunction<int, const std::vector<int> &>(context, input, func);
   case InternalFunctionType::IntArrayToIntArray:
-    return foldSingleArgumentNoRankPolyFunction<const std::vector<int> &, std::vector<int>>(context, input, func);
+    return foldSingleArgumentNoRankPolyFunction<std::vector<int>, const std::vector<int> &>(context, input, func);
+  case InternalFunctionType::IntIntToInt:
+    return foldTwoArgumentWithRankPolyFunction<int, int, int>(context, input, func);
   }
   return std::nullopt;
 }

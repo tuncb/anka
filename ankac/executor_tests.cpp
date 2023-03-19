@@ -61,6 +61,15 @@ TEST_CASE("single tuple arguments")
   CHECK_EQ(executeText("ioata inc inc [5]"), "(1 2 3 4 5 6 7)");
 }
 
+TEST_CASE("double argument rank polymorphism")
+{
+  CHECK_EQ(executeText("add [5 6]"), "11");
+  CHECK_EQ(executeText("add [(1 2 3) (3 4 5)]"), "(4 6 8)");
+  CHECK_THROWS_AS(executeText("add [(1 2 3 4) (3 4 5)]"), const anka::ExecutionError &);
+  CHECK_EQ(executeText("mul [10 (3 4 5)]"), "(30 40 50)");
+  CHECK_EQ(executeText("sub [(3 4 5) 1]"), "(2 3 4)");
+}
+
 TEST_CASE("mismatch errors")
 {
   CHECK_THROWS_AS(executeText("10 20"), const anka::ExecutionError &);

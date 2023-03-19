@@ -32,6 +32,7 @@ enum class InternalFunctionType
   IntToInt,
   IntArrayToInt,
   IntArrayToIntArray,
+  IntIntToInt,
 };
 
 struct InternalFunction
