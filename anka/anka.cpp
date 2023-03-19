@@ -87,7 +87,6 @@ auto intrepretRepl(anka::Context &&context) -> void
 
   std::cout << "Special functions:\n";
   std::cout << ".exit: Exit REPL.\n";
-  std::cout << ".quit: Exit REPL.\n";
   std::cout << ".clear: Clear screen.\n";
   std::cout << ".internal: List internal commands and constants.\n";
   std::cout << ".history: List command history.\n";
@@ -114,10 +113,9 @@ auto intrepretRepl(anka::Context &&context) -> void
     {
       continue;
     }
-    else if (input.compare(0, 5, ".quit") == 0 || input.compare(0, 5, ".exit") == 0)
+    else if (input.compare(0, 5, ".exit") == 0)
     {
       // exit the repl
-
       rx.history_add(input);
       break;
     }
