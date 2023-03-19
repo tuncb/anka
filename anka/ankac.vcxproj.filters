@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ankac.cpp">
+    <ClCompile Include="anka.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="tokenizer.cpp">
