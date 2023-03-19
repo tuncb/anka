@@ -148,3 +148,15 @@ auto anka::toString(const anka::Context &context, const anka::Word &word) -> std
     return "";
   }
 }
+
+auto anka::createWord(Context &context, int value) -> Word
+{
+  context.integerNumbers.push_back(value);
+  return anka::Word{anka::WordType::IntegerNumber, context.integerNumbers.size() - 1};
+}
+
+auto anka::createWord(Context &context, std::vector<int> &&vec) -> Word
+{
+  context.integerArrays.push_back(std::move(vec));
+  return anka::Word{anka::WordType::IntegerArray, context.integerArrays.size() - 1};
+}

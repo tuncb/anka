@@ -1,6 +1,7 @@
 #include "internal_functions.h"
 
 #include <optional>
+#include <algorithm>
 
 namespace anka
 {
@@ -44,6 +45,13 @@ auto length(const std::vector<int> &vec) -> int
   return static_cast<int>(vec.size());
 }
 
+auto sort(const std::vector<int> &vec) -> std::vector<int>
+{
+  auto res = vec;
+  std::sort(res.begin(), res.end());
+  return res;
+}
+
 } // namespace anka
 
 auto anka::getInternalFunctions() -> const std::unordered_map<std::string, anka::InternalFunction> &
@@ -59,6 +67,7 @@ auto anka::getInternalFunctions() -> const std::unordered_map<std::string, anka:
   map["neg"] = {&anka::neg, InternalFunctionType::IntToInt};
   map["abs"] = {&anka::abs, InternalFunctionType::IntToInt};
   map["length"] = {&anka::length, InternalFunctionType::IntArrayToInt};
+  map["sort"] = {&anka::sort, InternalFunctionType::IntArrayToIntArray};
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();

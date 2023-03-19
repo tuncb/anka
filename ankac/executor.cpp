@@ -9,7 +9,8 @@
 
 typedef std::vector<int> (*IntToIntVectorFunc)(int);
 typedef int (*IntToIntFunc)(int);
-typedef int (*IntVectorToIntFunc)(const std::vector<int>&);
+typedef int (*IntVectorToIntFunc)(const std::vector<int> &);
+typedef std::vector<int> (*IntVectorToIntArrayFunc)(const std::vector<int> &);
 
 auto findFunction(const std::string &name) -> std::optional<anka::InternalFunction>
 {
@@ -28,10 +29,9 @@ auto foldIntToIntArrayFunction(anka::Context &context, const anka::Word &input, 
     return std::nullopt;
 
   auto funcptr = (IntToIntVectorFunc)func.ptr;
-  auto vec = funcptr(context.integerNumbers[input.index]);
+  auto output = funcptr(context.integerNumbers[input.index]);
 
-  context.integerArrays.push_back(std::move(vec));
-  return anka::Word{anka::WordType::IntegerArray, context.integerArrays.size() - 1};
+  return anka::createWord(context, std::move(output));
 }
 
 auto foldIntToIntFunction(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
@@ -42,8 +42,7 @@ auto foldIntToIntFunction(anka::Context &context, const anka::Word &input, const
   if (input.type == anka::WordType::IntegerNumber)
   {
     auto value = funcptr(context.integerNumbers[input.index]);
-    context.integerNumbers.push_back(value);
-    return anka::Word{anka::WordType::IntegerNumber, context.integerNumbers.size() - 1};
+    return anka::createWord(context, value);
   }
 
   if (input.type == anka::WordType::IntegerArray)
@@ -55,8 +54,7 @@ auto foldIntToIntFunction(anka::Context &context, const anka::Word &input, const
     {
       output.push_back(funcptr(inp));
     }
-    context.integerArrays.push_back(std::move(output));
-    return anka::Word{anka::WordType::IntegerArray, context.integerArrays.size() - 1};
+    return anka::createWord(context, std::move(output));
   }
   return std::nullopt;
 }
@@ -74,6 +72,18 @@ auto foldIntArrayToIntFunction(anka::Context &context, const anka::Word &input, 
   return anka::Word{anka::WordType::IntegerNumber, context.integerNumbers.size() - 1};
 }
 
+auto foldIntArrayToIntArrayFunction(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
+    -> std::optional<anka::Word>
+{
+  if (input.type != anka::WordType::IntegerArray)
+    return std::nullopt;
+
+  auto funcptr = (IntVectorToIntArrayFunc)func.ptr;
+  auto output = funcptr(context.integerArrays[input.index]);
+
+  return anka::createWord(context, std::move(output));
+}
+
 auto foldFunction(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
     -> std::optional<anka::Word>
 {
@@ -86,6 +96,8 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
     return foldIntToIntFunction(context, input, func);
   case InternalFunctionType::IntArrayToInt:
     return foldIntArrayToIntFunction(context, input, func);
+  case InternalFunctionType::IntArrayToIntArray:
+    return foldIntArrayToIntArrayFunction(context, input, func);
   }
   return std::nullopt;
 }

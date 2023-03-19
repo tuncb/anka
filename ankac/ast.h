@@ -28,6 +28,7 @@ enum class InternalFunctionType
   IntToIntArray,
   IntToInt,
   IntArrayToInt,
+  IntArrayToIntArray,
 };
 
 struct InternalFunction
@@ -65,5 +66,8 @@ struct AST
 auto parseAST(const std::string_view content, std::span<Token> tokens, Context &&context) -> AST;
 
 auto toString(const anka::Context &context, const anka::Word &word) -> std::string;
+
+auto createWord(Context &context, int value) -> Word;
+auto createWord(Context &context, std::vector<int>&& vec) -> Word;
 
 } // namespace anka
