@@ -26,6 +26,21 @@ auto dec(int n) -> int
   return n - 1;
 }
 
+auto neg(int n) -> int
+{
+  return -n;
+}
+
+auto absValue(int n) -> int
+{
+  return std::abs(n);
+}
+
+auto length(const std::vector<int>& vec) -> int
+{
+  return vec.size();
+}
+
 auto anka::getInternalFunctions() -> const std::unordered_map<std::string, anka::InternalFunction> &
 {
   static std::optional<std::unordered_map<std::string, anka::InternalFunction>> functionMapOpt;
@@ -36,6 +51,9 @@ auto anka::getInternalFunctions() -> const std::unordered_map<std::string, anka:
   map["ioata"] = {&ioata, InternalFunctionType::IntToIntArray};
   map["inc"] = {&inc, InternalFunctionType::IntToInt};
   map["dec"] = {&dec, InternalFunctionType::IntToInt};
+  map["neg"] = {&neg, InternalFunctionType::IntToInt};
+  map["abs"] = {&absValue, InternalFunctionType::IntToInt};
+  map["length"] = {&length, InternalFunctionType::IntArrayToInt};
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();

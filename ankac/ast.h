@@ -26,7 +26,8 @@ enum class WordType
 enum class InternalFunctionType
 {
   IntToIntArray,
-  IntToInt
+  IntToInt,
+  IntArrayToInt,
 };
 
 struct InternalFunction

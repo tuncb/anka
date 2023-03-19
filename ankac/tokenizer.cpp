@@ -4,7 +4,7 @@
 
 auto isNumber(const char c) -> bool
 {
-  return c >= '0' && c <= '9';
+  return (c >= '0' && c <= '9') || c == '-';
 }
 
 auto isEndLine(const char c) -> bool

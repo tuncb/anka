@@ -9,6 +9,7 @@
 
 typedef std::vector<int> (*IntToIntVectorFunc)(int);
 typedef int (*IntToIntFunc)(int);
+typedef int (*IntVectorToIntFunc)(const std::vector<int>&);
 
 auto findFunction(const std::string &name) -> std::optional<anka::InternalFunction>
 {
@@ -60,6 +61,19 @@ auto foldIntToIntFunction(anka::Context &context, const anka::Word &input, const
   return std::nullopt;
 }
 
+auto foldIntArrayToIntFunction(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
+    -> std::optional<anka::Word>
+{
+  if (input.type != anka::WordType::IntegerArray)
+    return std::nullopt;
+
+  auto funcptr = (IntVectorToIntFunc)func.ptr;
+  auto value = funcptr(context.integerArrays[input.index]);
+
+  context.integerNumbers.push_back(value);
+  return anka::Word{anka::WordType::IntegerNumber, context.integerNumbers.size() - 1};
+}
+
 auto foldFunction(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
     -> std::optional<anka::Word>
 {
@@ -70,6 +84,8 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
     return foldIntToIntArrayFunction(context, input, func);
   case InternalFunctionType::IntToInt:
     return foldIntToIntFunction(context, input, func);
+  case InternalFunctionType::IntArrayToInt:
+    return foldIntArrayToIntFunction(context, input, func);
   }
   return std::nullopt;
 }
