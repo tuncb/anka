@@ -19,6 +19,7 @@
 #include "ast.h"
 #include "executor.h"
 #include "tokenizer.h"
+#include "internal_functions.h"
 
 auto readFile(const char *filename) -> std::string
 {
@@ -84,6 +85,13 @@ auto intrepretRepl(anka::Context &&context) -> void
   using Replxx = replxx::Replxx;
   Replxx rx;
 
+  std::cout << "Special functions:\n";
+  std::cout << ".exit: Exit REPL.\n";
+  std::cout << ".quit: Exit REPL.\n";
+  std::cout << ".clear: Clear screen.\n";
+  std::cout << ".internal: List internal commands and constants.\n";
+  std::cout << ".history: List command history.\n";
+
   std::string prompt = "\x1b[1;32manka\x1b[0m> ";
 
   for (;;)
@@ -125,6 +133,25 @@ auto intrepretRepl(anka::Context &&context) -> void
       for (int i(0); hs.next(); ++i)
       {
         std::cout << std::setw(4) << i << ": " << hs.get().text() << "\n";
+      }
+
+      rx.history_add(input);
+    }
+    else if (input.compare(0, 9, ".internal") == 0)
+    {
+      const auto& internalFunctions = anka::getInternalFunctions();
+      std::vector<std::string> names;
+
+      for (auto command: internalFunctions)
+      {
+        names.push_back(command.first);
+      }
+
+      std::sort(names.begin(), names.end());
+
+      for (auto name : names)
+      {
+        std::cout << std::format("{}\n", name);
       }
 
       rx.history_add(input);

@@ -2,6 +2,9 @@
 
 #include <optional>
 
+namespace anka
+{
+
 auto ioata(int n) -> std::vector<int>
 {
   std::vector<int> res;
@@ -9,7 +12,7 @@ auto ioata(int n) -> std::vector<int>
     return res;
 
   res.reserve(n);
-  for(auto i = 0; i < n; ++i)
+  for (auto i = 0; i < n; ++i)
   {
     res.push_back(i + 1);
   }
@@ -31,15 +34,17 @@ auto neg(int n) -> int
   return -n;
 }
 
-auto absValue(int n) -> int
+auto abs(int n) -> int
 {
   return std::abs(n);
 }
 
-auto length(const std::vector<int>& vec) -> int
+auto length(const std::vector<int> &vec) -> int
 {
-  return vec.size();
+  return static_cast<int>(vec.size());
 }
+
+} // namespace anka
 
 auto anka::getInternalFunctions() -> const std::unordered_map<std::string, anka::InternalFunction> &
 {
@@ -48,12 +53,12 @@ auto anka::getInternalFunctions() -> const std::unordered_map<std::string, anka:
     return functionMapOpt.value();
 
   std::unordered_map<std::string, anka::InternalFunction> map;
-  map["ioata"] = {&ioata, InternalFunctionType::IntToIntArray};
-  map["inc"] = {&inc, InternalFunctionType::IntToInt};
-  map["dec"] = {&dec, InternalFunctionType::IntToInt};
-  map["neg"] = {&neg, InternalFunctionType::IntToInt};
-  map["abs"] = {&absValue, InternalFunctionType::IntToInt};
-  map["length"] = {&length, InternalFunctionType::IntArrayToInt};
+  map["ioata"] = {&anka::ioata, InternalFunctionType::IntToIntArray};
+  map["inc"] = {&anka::inc, InternalFunctionType::IntToInt};
+  map["dec"] = {&anka::dec, InternalFunctionType::IntToInt};
+  map["neg"] = {&anka::neg, InternalFunctionType::IntToInt};
+  map["abs"] = {&anka::abs, InternalFunctionType::IntToInt};
+  map["length"] = {&anka::length, InternalFunctionType::IntArrayToInt};
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();

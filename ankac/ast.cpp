@@ -21,7 +21,7 @@ auto toInt(const std::string_view content, anka::Token token) -> int
     return value;
   }
 
-  auto msg = std::format("Expected integer number, found: {}.", std::string(b, e));
+  auto msg = std::format("Expected integer number, found: {}", std::string(b, e));
   throw anka::ASTError({token, msg});
 }
 
@@ -109,7 +109,7 @@ auto extractSentence(const std::string_view content, anka::Context &context, Tok
       sentence.words.emplace_back(addArrayWord(content, context, tokenIter, tokensEnd));
       break;
     case TokenType::ArrayEnd:
-      throw ASTError(*tokenIter, "Did not expect to find an array end token.");
+      throw ASTError(*tokenIter, "Did not expect to find an array end token");
     case TokenType::SentenceEnd:
       ++tokenIter;
       return sentence;
