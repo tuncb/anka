@@ -16,6 +16,8 @@
 
 #include <replxx.hxx>
 
+#include <ranges>
+
 #include "ast.h"
 #include "executor.h"
 #include "tokenizer.h"
@@ -138,20 +140,15 @@ auto intrepretRepl(anka::Context &&context) -> void
     else if (input.compare(0, 9, ".internal") == 0)
     {
       const auto& internalFunctions = anka::getInternalFunctions();
-      std::vector<std::string> names;
 
-      for (auto command: internalFunctions)
-      {
-        names.push_back(command.first);
-      }
-
+      auto kv = std::views::keys(internalFunctions);
+      std::vector<std::string> names{kv.begin(), kv.end()};
       std::sort(names.begin(), names.end());
 
       for (auto name : names)
       {
         std::cout << std::format("{}\n", name);
       }
-
       rx.history_add(input);
     }
     else
