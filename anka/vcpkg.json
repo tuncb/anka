@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "ankac",
+  "version": "0.0.1",
+  "dependencies": [
+    "doctest",
+    "range-v3",
+    "fmt",
+    "argumentum",
+    "replxx",
+    "tl-optional"
+  ]
+}
