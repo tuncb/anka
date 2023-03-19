@@ -259,6 +259,10 @@
     <ClInclude Include="internal_functions.h" />
     <ClInclude Include="tokenizer.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\readme.md" />
+    <None Include="vcpkg.json" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
