@@ -1,5 +1,6 @@
 #include "ast.h"
 
+#include <algorithm>
 #include <charconv>
 #include <format>
 #include <iterator>
@@ -10,8 +11,10 @@ template <class T>
 concept TokenForwardIterator =
     std::forward_iterator<T> && std::is_same_v<typename std::iterator_traits<T>::value_type, anka::Token>;
 
-// Forward decleration
+// Forward declerations
 auto extractTuple(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
+                  TokenForwardIterator auto tokensEnd) -> anka::Word;
+auto extractArray(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
                   TokenForwardIterator auto tokensEnd) -> anka::Word;
 
 auto toInt(const std::string_view content, anka::Token token) -> int
@@ -43,53 +46,19 @@ auto addNameWord(const std::string_view content, anka::Context &context, TokenFo
 {
   auto token = *(tokenIter++);
   auto value = std::string(content.data() + token.token_start, content.data() + token.token_start + token.len);
+
+  if (value == "true")
+  {
+    return createWord(context, true);
+  }
+
+  if (value == "false")
+  {
+    return createWord(context, false);
+  }
+
   context.names.push_back(value);
   return {anka::WordType::Name, context.names.size() - 1};
-}
-
-auto addArrayWord(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
-                  TokenForwardIterator auto tokensEnd) -> anka::Word
-{
-  using namespace anka;
-
-  if (tokenIter == tokensEnd)
-  {
-    throw ASTError{std::nullopt, "Array ended unexpectedly."};
-  }
-
-  if (tokenIter->type == TokenType::ArrayEnd)
-  {
-    throw ASTError{*tokenIter, "Empty arrays are not supported."};
-  }
-
-  if (tokenIter->type != TokenType::NumberInt)
-  {
-    throw ASTError{*tokenIter, "Only integer number arrays are supported."};
-  }
-
-  const auto tokenType = TokenType::NumberInt;
-
-  std::vector<int> numbers;
-
-  for (; tokenIter != tokensEnd;)
-  {
-    if (tokenIter->type == TokenType::ArrayEnd)
-    {
-      tokenIter++;
-      context.integerArrays.emplace_back(std::move(numbers));
-      return {anka::WordType::IntegerArray, context.integerArrays.size() - 1};
-    }
-
-    if (tokenIter->type != tokenType)
-    {
-      throw ASTError{*tokenIter, "Unexpected token type."};
-    }
-
-    numbers.push_back(toInt(content, *tokenIter));
-    tokenIter++;
-  }
-
-  throw ASTError{std::nullopt, "Array ended unexpectedly."};
 }
 
 auto extractWords(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
@@ -122,7 +91,7 @@ auto extractWords(const std::string_view content, anka::Context &context, TokenF
       break;
     case TokenType::ArrayStart:
       ++tokenIter;
-      words.emplace_back(addArrayWord(content, context, tokenIter, tokensEnd));
+      words.emplace_back(extractArray(content, context, tokenIter, tokensEnd));
       break;
     case TokenType::TupleStart:
       ++tokenIter;
@@ -157,6 +126,46 @@ auto extractTuple(const std::string_view content, anka::Context &context, TokenF
   return createWord(context, std::move(words));
 };
 
+auto extractArray(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
+                  TokenForwardIterator auto tokensEnd) -> anka::Word
+{
+  using namespace anka;
+
+  auto startToken = *tokenIter;
+
+  Context arrayContext;
+  auto words = extractWords(content, arrayContext, tokenIter, tokensEnd, {TokenType::SentenceEnd, TokenType::TupleEnd},
+                            TokenType::ArrayEnd);
+
+  if (words.empty())
+  {
+    throw ASTError{startToken, "Empty arrays are not supported"};
+  }
+
+  auto expectedType = words.front().type;
+  if (!(expectedType == WordType::IntegerNumber or expectedType == WordType::Boolean))
+  {
+    throw ASTError{startToken, "Only boolean or integer arrays are supported"};
+  }
+
+  if (!std::all_of(words.begin(), words.end(), [expectedType](const Word &word) { return word.type == expectedType; }))
+  {
+    throw ASTError{startToken, "Arrays should have elements of the same type"};
+  }
+
+  if (expectedType == WordType::IntegerNumber)
+  {
+    return createWord(context, std::move(arrayContext.integerNumbers));
+  }
+
+  if (expectedType == WordType::Boolean)
+  {
+    return createWord(context, std::move(arrayContext.booleans));
+  }
+
+  throw ASTError{startToken, "Fatal Error: Could not extract array"};
+};
+
 auto anka::parseAST(const std::string_view content, std::span<Token> tokens, Context &&context) -> AST
 {
   std::vector<Sentence> sentences;
@@ -180,6 +189,19 @@ auto anka::toString(const anka::Context &context, const anka::Word &word) -> std
     auto &v = context.integerArrays[word.index];
     return fmt::format("({})", fmt::join(v, " "));
   }
+  case WordType::Boolean:
+    return std::format("{}", context.booleans[word.index]);
+  case WordType::BooleanArray: {
+    auto &v = context.booleanArrays[word.index];
+    return fmt::format("({})", fmt::join(v, " "));
+  }
+  case WordType::Tuple: {
+    std::vector<std::string> names;
+    auto &&tup = context.tuples[word.index];
+    std::transform(tup.begin(), tup.end(), std::back_inserter(names),
+                   [&context](const Word &word) { return toString(context, word); });
+    return fmt::format("[{}]", fmt::join(names, " "));
+  }
   case WordType::Name:
     return context.names[word.index];
   default:
@@ -191,6 +213,12 @@ auto anka::createWord(Context &context, int value) -> Word
 {
   context.integerNumbers.push_back(value);
   return anka::Word{anka::WordType::IntegerNumber, context.integerNumbers.size() - 1};
+}
+
+auto anka::createWord(Context &context, bool value) -> Word
+{
+  context.booleans.push_back(value);
+  return anka::Word{anka::WordType::Boolean, context.booleans.size() - 1};
 }
 
 auto anka::createWord(Context &context, std::vector<anka::Word> &&vec) -> Word
@@ -226,6 +254,12 @@ auto anka::createWord(Context &context, std::vector<int> &&vec) -> Word
 {
   context.integerArrays.push_back(std::move(vec));
   return anka::Word{anka::WordType::IntegerArray, context.integerArrays.size() - 1};
+}
+
+auto anka::createWord(Context &context, std::vector<bool> &&vec) -> Word
+{
+  context.booleanArrays.push_back(std::move(vec));
+  return anka::Word{anka::WordType::BooleanArray, context.booleanArrays.size() - 1};
 }
 
 auto anka::getWord(const Context &context, const Word &input, size_t index) -> std::optional<Word>

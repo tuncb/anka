@@ -143,12 +143,18 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
     return foldSingleArgumentNoRankPolyFunction<std::vector<int>, int>(context, input, func);
   case InternalFunctionType::IntToInt:
     return foldSingleArgumentWithRankPolyFunction<int, int>(context, input, func);
+  case InternalFunctionType::BoolToBool:
+    return foldSingleArgumentWithRankPolyFunction<bool, bool>(context, input, func);
   case InternalFunctionType::IntArrayToInt:
     return foldSingleArgumentNoRankPolyFunction<int, const std::vector<int> &>(context, input, func);
   case InternalFunctionType::IntArrayToIntArray:
     return foldSingleArgumentNoRankPolyFunction<std::vector<int>, const std::vector<int> &>(context, input, func);
   case InternalFunctionType::IntIntToInt:
     return foldTwoArgumentWithRankPolyFunction<int, int, int>(context, input, func);
+  case InternalFunctionType::BoolBoolToBool:
+    return foldTwoArgumentWithRankPolyFunction<bool, bool, bool>(context, input, func);
+  case InternalFunctionType::IntIntToBool:
+    return foldTwoArgumentWithRankPolyFunction<bool, int, int>(context, input, func);
   }
   return std::nullopt;
 }

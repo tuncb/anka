@@ -113,6 +113,28 @@ TEST_CASE("multi sentence")
   CHECK_EQ(ast.sentences[1].words, std::vector<Word>{{WordType::IntegerNumber, 1}, {WordType::IntegerArray, 1}});
 }
 
+TEST_CASE("booleans")
+{
+  using namespace anka;
+
+  auto ast = toAST("true false");
+  REQUIRE_EQ(ast.sentences.size(), 1);
+  REQUIRE_EQ(ast.context.booleans.size(), 2);
+  CHECK_EQ(ast.context.booleans, std::vector<bool>{true, false});
+  CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::Boolean, 0}, {WordType::Boolean, 1}});
+}
+
+TEST_CASE("boolean array")
+{
+  using namespace anka;
+
+  auto ast = toAST("(true false)");
+  REQUIRE_EQ(ast.sentences.size(), 1);
+  REQUIRE_EQ(ast.context.booleanArrays.size(), 1);
+  CHECK_EQ(ast.context.booleanArrays[0], std::vector<bool>{true, false});
+  CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::BooleanArray, 0}});
+}
+
 TEST_CASE("names")
 {
   using namespace anka;

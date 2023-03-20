@@ -23,16 +23,21 @@ enum class WordType
   IntegerArray,
   Name,
   Context,
-  Tuple
+  Tuple,
+  Boolean,
+  BooleanArray
 };
 
 enum class InternalFunctionType
 {
   IntToIntArray,
   IntToInt,
+  BoolToBool,
   IntArrayToInt,
   IntArrayToIntArray,
   IntIntToInt,
+  IntIntToBool,
+  BoolBoolToBool,
 };
 
 struct InternalFunction
@@ -58,6 +63,8 @@ struct Context
 {
   std::vector<int> integerNumbers;
   std::vector<std::vector<int>> integerArrays;
+  std::vector<bool> booleans;
+  std::vector<std::vector<bool>> booleanArrays;
   std::vector<std::string> names;
   std::vector<std::vector<Word>> tuples;
 };
@@ -72,10 +79,14 @@ template <typename T> T getValue(const Context &context, size_t index)
     return context.integerArrays[index];
   else if constexpr (std::is_same_v<T, const std::vector<anka::Word> &>)
     return context.tuples[index];
+  else if constexpr (std::is_same_v<T, bool>)
+    return context.booleans[index];
+  else if constexpr (std::is_same_v<T, const std::vector<bool> &>)
+    return context.booleanArrays[index];
   else
     []<bool flag = false>()
     {
-      static_assert(flag, "no match");
+      static_assert(flag, "No match found in function getValue().");
     }
   ();
 }
@@ -92,7 +103,9 @@ auto toString(const anka::Context &context, const anka::Word &word) -> std::stri
 auto toString(TokenType type) -> std::string;
 
 auto createWord(Context &context, int value) -> Word;
+auto createWord(Context &context, bool value) -> Word;
 auto createWord(Context &context, std::vector<int> &&vec) -> Word;
+auto createWord(Context &context, std::vector<bool> &&vec) -> Word;
 auto createWord(Context &context, std::vector<anka::Word> &&vec) -> Word;
 
 auto getWord(const Context &context, const Word &input, size_t index) -> std::optional<Word>;
@@ -107,10 +120,14 @@ template <typename T> WordType getWordType()
     return WordType::IntegerArray;
   else if constexpr (std::is_same_v<T, const std::vector<anka::Word> &>)
     return WordType::Tuple;
+  else if constexpr (std::is_same_v<T, bool>)
+    return WordType::Boolean;
+  else if constexpr (std::is_same_v<T, const std::vector<bool> &>)
+    return WordType::BooleanArray;
   else
     []<bool flag = false>()
     {
-      static_assert(flag, "no match");
+      static_assert(flag, "No match found in function getWordType().");
     }
   ();
 }

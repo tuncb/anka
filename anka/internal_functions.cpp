@@ -1,7 +1,7 @@
 #include "internal_functions.h"
 
-#include <optional>
 #include <algorithm>
+#include <optional>
 
 namespace anka
 {
@@ -72,6 +72,26 @@ auto div(int v1, int v2) -> int
   return v1 / v2;
 }
 
+auto andFun(bool b1, bool b2) -> bool
+{
+  return b1 and b2;
+}
+
+auto orFun(bool b1, bool b2) -> bool
+{
+  return b1 or b2;
+}
+
+auto notFun(bool b) -> bool
+{
+  return !b;
+}
+
+auto equals(int v1, int v2) -> bool
+{
+  return v1 == v2;
+}
+
 } // namespace anka
 
 auto anka::getInternalFunctions() -> const std::unordered_map<std::string, anka::InternalFunction> &
@@ -92,6 +112,10 @@ auto anka::getInternalFunctions() -> const std::unordered_map<std::string, anka:
   map["sub"] = {&anka::sub, InternalFunctionType::IntIntToInt};
   map["mul"] = {&anka::mul, InternalFunctionType::IntIntToInt};
   map["div"] = {&anka::div, InternalFunctionType::IntIntToInt};
+  map["and"] = {&anka::andFun, InternalFunctionType::BoolBoolToBool};
+  map["or"] = {&anka::orFun, InternalFunctionType::BoolBoolToBool};
+  map["equals"] = {&anka::equals, InternalFunctionType::IntIntToBool};
+  map["not"] = {&anka::notFun, InternalFunctionType::BoolToBool};
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();
