@@ -81,7 +81,7 @@ auto execute(anka::Context &&context, const std::string_view content) -> std::op
   }
 }
 
-auto intrepretRepl(anka::Context &&context) -> void
+auto executeRepl(anka::Context &&context) -> void
 {
   using Replxx = replxx::Replxx;
   Replxx rx;
@@ -175,13 +175,13 @@ int main(int argc, char *argv[])
   using namespace argumentum;
 
   std::optional<std::string> filenameOpt;
-  auto runInterpreter = false;
+  auto runRepl = false;
 
   auto parser = argument_parser{};
   auto params = parser.params();
   parser.config().program(argv[0]).description("Anka");
   params.add_parameter(filenameOpt, "--filename", "-f").nargs(1).help("File name to process");
-  params.add_parameter(runInterpreter, "--interpreter", "-i").nargs(0).help("Run the interpreter");
+  params.add_parameter(runRepl, "--repl", "-r").nargs(0).help("Run REPL");
 
   if (!parser.parse_args(argc, argv))
     return -1;
@@ -207,9 +207,9 @@ int main(int argc, char *argv[])
     context = std::move(contextOpt.value());
   }
 
-  if (runInterpreter)
+  if (runRepl)
   {
-    intrepretRepl(std::move(context));
+    executeRepl(std::move(context));
   }
 }
 

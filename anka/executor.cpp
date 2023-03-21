@@ -229,7 +229,7 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
   case InternalFunctionType::Double_Double_Bool:
     return foldTwoArgumentWithRankPolyFunction<bool, double, double>(context, input, func);
   case InternalFunctionType::DoubleArray__Int:
-    return foldSingleArgumentNoRankPolyFunction<int, const std::vector<int> &>(context, input, func);
+    return foldSingleArgumentNoRankPolyFunction<int, const std::vector<double> &>(context, input, func);
   case InternalFunctionType::DoubleArray__DoubleArray:
     return foldSingleArgumentNoRankPolyFunction<std::vector<double>, const std::vector<double> &>(context, input, func);
   }
