@@ -1,0 +1,12 @@
+{
+  "files.associations": {
+    "chrono": "cpp",
+    "system_error": "cpp",
+    "xlocale": "cpp",
+    "xstring": "cpp",
+    "unordered_map": "cpp",
+    "string": "cpp",
+    "optional": "cpp",
+    "vector": "cpp"
+  }
+}

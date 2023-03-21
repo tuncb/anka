@@ -6,6 +6,10 @@
 #include <iterator>
 
 #include <fmt/ranges.h>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view.hpp>
+
+#include "internal_functions.h"
 
 template <class T>
 concept TokenForwardIterator =
@@ -202,8 +206,27 @@ auto anka::toString(const anka::Context &context, const anka::Word &word) -> std
                    [&context](const Word &word) { return toString(context, word); });
     return fmt::format("[{}]", fmt::join(names, " "));
   }
-  case WordType::Name:
-    return context.names[word.index];
+  case WordType::Name: {
+    const auto &name = context.names[word.index];
+    auto &&internalFunctions = getInternalFunctions();
+    if (auto iter = internalFunctions.find(name); iter != internalFunctions.end())
+    {
+      if (iter->second.size() == 1)
+      {
+        return fmt::format("{}: {}", name, toString(iter->second.front().type));
+      }
+      else
+      {
+        auto toStr = [&name](const anka::InternalFunction &overload) {
+          return fmt::format("{}: {}", name, toString(overload.type));
+        };
+
+        auto definitions = iter->second | ranges::views::transform(toStr) | ranges::to<std::vector<std::string>>();
+        return fmt::format("{}", fmt::join(definitions, "\n"));
+      }
+    }
+    return name;
+  }
   default:
     return "";
   }
@@ -232,7 +255,7 @@ auto anka::toString(TokenType type) -> std::string
   switch (type)
   {
   case TokenType::NumberInt:
-    return "integer number";
+    return "integer";
   case TokenType::Name:
     return "name";
   case TokenType::ArrayStart:

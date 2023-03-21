@@ -28,24 +28,6 @@ enum class WordType
   BooleanArray
 };
 
-enum class InternalFunctionType
-{
-  IntToIntArray,
-  IntToInt,
-  BoolToBool,
-  IntArrayToInt,
-  IntArrayToIntArray,
-  IntIntToInt,
-  IntIntToBool,
-  BoolBoolToBool,
-};
-
-struct InternalFunction
-{
-  void *ptr = nullptr;
-  InternalFunctionType type;
-};
-
 struct Word
 {
   WordType type;
@@ -134,6 +116,9 @@ template <typename T> WordType getWordType()
 
 template <typename T> tl::optional<T> extractValue(const Context &context, const Word &input, size_t index)
 {
+  if (index > 0 && input.type != WordType::Tuple)
+    return tl::nullopt;
+
   const auto wOpt = getWord(context, input, index);
   if (!wOpt)
     return tl::nullopt;

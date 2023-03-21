@@ -20,7 +20,7 @@ auto isSpace(const char c) -> bool
 auto isName(const char c) -> bool
 {
   auto ch = static_cast<unsigned char>(c);
-  return std::isalpha(ch) || std::isdigit(ch);
+  return std::isalpha(ch) || std::isdigit(ch) || ch == '_';
 }
 
 template <typename Predicate>

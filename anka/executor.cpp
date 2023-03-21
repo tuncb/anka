@@ -7,12 +7,65 @@
 
 #include "internal_functions.h"
 
-auto findFunction(const std::string &name) -> std::optional<anka::InternalFunction>
+auto nameExists(const std::string &name) -> bool
+{
+  const auto &internalFunctions = anka::getInternalFunctions();
+  auto iter = internalFunctions.find(name);
+  return iter != internalFunctions.end();
+}
+
+auto checkOverloadCompatibility(const anka::Context &context, anka::InternalFunctionType type, const anka::Word &word)
+    -> bool
+{
+  using namespace anka;
+
+  auto first = anka::getWord(context, word, 0);
+  if (!first.has_value())
+    return false;
+
+  switch (type)
+  {
+  case InternalFunctionType::Int__IntArray:
+  case InternalFunctionType::Int__Int:
+    return first.value().type == WordType::IntegerNumber || first.value().type == WordType::IntegerArray;
+  case InternalFunctionType::Bool__Bool:
+    return first.value().type == WordType::Boolean || first.value().type == WordType::BooleanArray;
+  case InternalFunctionType::IntArray__Int:
+  case InternalFunctionType::IntArray__IntArray:
+    return first.value().type == WordType::IntegerArray;
+  case InternalFunctionType::BoolArray__Int:
+    return first.value().type == WordType::BooleanArray;
+  };
+
+  auto second = anka::getWord(context, word, 0);
+  if (!second.has_value())
+    return false;
+
+  switch (type)
+  {
+  case InternalFunctionType::Int_Int__Int:
+  case InternalFunctionType::Int_Int_Bool:
+    return (first.value().type == WordType::IntegerNumber || first.value().type == WordType::IntegerArray) &&
+           (second.value().type == WordType::IntegerNumber || second.value().type == WordType::IntegerArray);
+  case InternalFunctionType::Bool_Bool__Bool:
+    return (first.value().type == WordType::Boolean || first.value().type == WordType::BooleanArray) &&
+           (second.value().type == WordType::Boolean || second.value().type == WordType::BooleanArray);
+  };
+
+  return false;
+}
+
+auto findOverload(const anka::Context &context, const std::string &name, const anka::Word &word)
+    -> std::optional<anka::InternalFunction>
 {
   const auto &internalFunctions = anka::getInternalFunctions();
   if (auto iter = internalFunctions.find(name); iter != internalFunctions.end())
   {
-    return iter->second;
+    for (auto &&overload : iter->second)
+    {
+      if (checkOverloadCompatibility(context, overload.type, word))
+        return overload;
+    }
   }
   return std::nullopt;
 }
@@ -139,21 +192,23 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
   using namespace anka;
   switch (func.type)
   {
-  case InternalFunctionType::IntToIntArray:
+  case InternalFunctionType::Int__IntArray:
     return foldSingleArgumentNoRankPolyFunction<std::vector<int>, int>(context, input, func);
-  case InternalFunctionType::IntToInt:
+  case InternalFunctionType::Int__Int:
     return foldSingleArgumentWithRankPolyFunction<int, int>(context, input, func);
-  case InternalFunctionType::BoolToBool:
+  case InternalFunctionType::Bool__Bool:
     return foldSingleArgumentWithRankPolyFunction<bool, bool>(context, input, func);
-  case InternalFunctionType::IntArrayToInt:
+  case InternalFunctionType::IntArray__Int:
     return foldSingleArgumentNoRankPolyFunction<int, const std::vector<int> &>(context, input, func);
-  case InternalFunctionType::IntArrayToIntArray:
+  case InternalFunctionType::BoolArray__Int:
+    return foldSingleArgumentNoRankPolyFunction<int, const std::vector<bool> &>(context, input, func);
+  case InternalFunctionType::IntArray__IntArray:
     return foldSingleArgumentNoRankPolyFunction<std::vector<int>, const std::vector<int> &>(context, input, func);
-  case InternalFunctionType::IntIntToInt:
+  case InternalFunctionType::Int_Int__Int:
     return foldTwoArgumentWithRankPolyFunction<int, int, int>(context, input, func);
-  case InternalFunctionType::BoolBoolToBool:
+  case InternalFunctionType::Bool_Bool__Bool:
     return foldTwoArgumentWithRankPolyFunction<bool, bool, bool>(context, input, func);
-  case InternalFunctionType::IntIntToBool:
+  case InternalFunctionType::Int_Int_Bool:
     return foldTwoArgumentWithRankPolyFunction<bool, int, int>(context, input, func);
   }
   return std::nullopt;
@@ -165,7 +220,7 @@ auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) ->
   if (w1.type == WordType::Name)
   {
     const auto &name = context.names[w1.index];
-    if (findFunction(name))
+    if (nameExists(name))
     {
       throw anka::ExecutionError{w1, w2, "Could not fold words."};
     }
@@ -174,7 +229,7 @@ auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) ->
   if (w2.type == WordType::Name)
   {
     const auto &name = context.names[w2.index];
-    auto functOpt = findFunction(name);
+    auto functOpt = findOverload(context, name, w1);
     if (functOpt)
     {
       auto wordOpt = foldFunction(context, w1, functOpt.value());
@@ -196,7 +251,7 @@ auto expandName(anka::Context &context, const anka::Word &word) -> anka::Word
     return word;
 
   const auto &name = context.names[word.index];
-  if (!findFunction(name))
+  if (!nameExists(name))
   {
     throw anka::ExecutionError{word, std::nullopt, "Could not find word."};
   }

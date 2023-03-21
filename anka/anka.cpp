@@ -13,15 +13,14 @@
 #include <string>
 
 #include <argumentum/argparse.h>
-
 #include <replxx.hxx>
 
 #include <ranges>
 
 #include "ast.h"
 #include "executor.h"
-#include "tokenizer.h"
 #include "internal_functions.h"
+#include "tokenizer.h"
 
 auto readFile(const char *filename) -> std::string
 {
@@ -139,15 +138,23 @@ auto intrepretRepl(anka::Context &&context) -> void
     }
     else if (input.compare(0, 9, ".internal") == 0)
     {
-      const auto& internalFunctions = anka::getInternalFunctions();
+      const auto &internalFunctions = anka::getInternalFunctions();
 
       auto kv = std::views::keys(internalFunctions);
       std::vector<std::string> names{kv.begin(), kv.end()};
       std::sort(names.begin(), names.end());
+      auto maxLength =
+          std::max_element(names.begin(), names.end(), [](const std::string &name1, const std::string &name2) {
+            return name1.length() < name2.length();
+          })->length();
 
       for (auto name : names)
       {
-        std::cout << std::format("{}\n", name);
+        const auto &overloads = internalFunctions.at(name);
+        for (auto &overload : overloads)
+        {
+          std::cout << std::format("{:<{}}: {}\n", name, maxLength, anka::toString(overload.type));
+        }
       }
       rx.history_add(input);
     }

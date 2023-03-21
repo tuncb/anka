@@ -41,12 +41,22 @@ TEST_CASE("internal functions")
 {
   CHECK_EQ(executeText("ioata 5"), "(1 2 3 4 5)");
   CHECK_THROWS_AS(executeText("ioata (1 2 3)"), const anka::ExecutionError &);
+  CHECK_THROWS_AS(executeText("equals 1"), const anka::ExecutionError &);
+  CHECK_THROWS_AS(executeText("add [1]"), const anka::ExecutionError &);
   CHECK_EQ(executeText("inc 5"), "6");
   CHECK_EQ(executeText("inc (1 2 3)"), "(2 3 4)");
   CHECK_EQ(executeText("dec (1 2 3)"), "(0 1 2)");
   CHECK_EQ(executeText("dec inc 5"), "5");
   CHECK_EQ(executeText("dec inc (7 8 9)"), "(7 8 9)");
   CHECK_EQ(executeText("ioata inc inc 5"), "(1 2 3 4 5 6 7)");
+}
+
+TEST_CASE("internal function overloads")
+{
+  CHECK_EQ(executeText("equals [1 1]"), "true");
+  CHECK_EQ(executeText("equals [true true]"), "true");
+  CHECK_EQ(executeText("equals [true (false true)]"), "(false true)");
+  CHECK_EQ(executeText("equals [(1 2 3) (1 3 4)]"), "(true false false)");
 }
 
 TEST_CASE("single tuple arguments")
