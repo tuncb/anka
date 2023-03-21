@@ -20,22 +20,21 @@ auto ioata(int n) -> std::vector<int>
   return res;
 }
 
-auto inc(int n) -> int
+template <typename T> auto inc(T n) -> T
 {
-  return n + 1;
+  return n + (T)1;
 }
 
-auto dec(int n) -> int
+template <typename T> auto dec(T n) -> T
 {
-  return n - 1;
+  return n - (T)1;
 }
 
-auto neg(int n) -> int
+template <typename T> auto neg(T n) -> T
 {
   return -n;
 }
-
-auto abs(int n) -> int
+template <typename T> auto abs(T n) -> T
 {
   return std::abs(n);
 }
@@ -45,29 +44,28 @@ template <typename T> auto length(const std::vector<T> &vec) -> int
   return static_cast<int>(vec.size());
 }
 
-auto sort(const std::vector<int> &vec) -> std::vector<int>
+template <typename T> auto sort(const std::vector<T> &vec) -> std::vector<T>
 {
   auto res = vec;
   std::sort(res.begin(), res.end());
   return res;
 }
 
-auto add(int v1, int v2) -> int
+template <typename T> auto add(T v1, T v2) -> T
 {
   return v1 + v2;
 }
 
-auto sub(int v1, int v2) -> int
+template <typename T> auto sub(T v1, T v2) -> T
 {
   return v1 - v2;
 }
 
-auto mul(int v1, int v2) -> int
+template <typename T> auto mul(T v1, T v2) -> T
 {
   return v1 * v2;
 }
-
-auto div(int v1, int v2) -> int
+template <typename T> auto div(T v1, T v2) -> T
 {
   return v1 / v2;
 }
@@ -107,22 +105,35 @@ auto anka::getInternalFunctions() -> const std::unordered_map<std::string, std::
 
   std::unordered_map<std::string, std::vector<anka::InternalFunction>> map;
   map["ioata"] = {{&anka::ioata, InternalFunctionType::Int__IntArray}};
-  map["inc"] = {{&anka::inc, InternalFunctionType::Int__Int}};
-  map["dec"] = {{&anka::dec, InternalFunctionType::Int__Int}};
-  map["neg"] = {{&anka::neg, InternalFunctionType::Int__Int}};
-  map["abs"] = {{&anka::abs, InternalFunctionType::Int__Int}};
+  map["inc"] = {{&anka::inc<int>, InternalFunctionType::Int__Int},
+                {&anka::inc<double>, InternalFunctionType::Double__Double}};
+  map["dec"] = {{&anka::dec<int>, InternalFunctionType::Int__Int},
+                {&anka::dec<double>, InternalFunctionType::Double__Double}};
+  map["neg"] = {{&anka::neg<int>, InternalFunctionType::Int__Int},
+                {&anka::neg<double>, InternalFunctionType::Double__Double}};
+  map["abs"] = {{&anka::abs<int>, InternalFunctionType::Int__Int},
+                {&anka::abs<double>, InternalFunctionType::Double__Double}};
   map["length"] = {{&anka::length<int>, InternalFunctionType::IntArray__Int},
+                   {&anka::length<double>, InternalFunctionType::DoubleArray__Int},
                    {&anka::length<bool>, InternalFunctionType::BoolArray__Int}};
-  map["sort"] = {{&anka::sort, InternalFunctionType::IntArray__IntArray}};
-  map["add"] = {{&anka::add, InternalFunctionType::Int_Int__Int}};
-  map["sub"] = {{&anka::sub, InternalFunctionType::Int_Int__Int}};
-  map["mul"] = {{&anka::mul, InternalFunctionType::Int_Int__Int}};
-  map["div"] = {{&anka::div, InternalFunctionType::Int_Int__Int}};
+  map["sort"] = {{&anka::sort<int>, InternalFunctionType::IntArray__IntArray},
+                 {&anka::sort<bool>, InternalFunctionType::BoolArray__BoolArray},
+                 {&anka::sort<double>, InternalFunctionType::DoubleArray__DoubleArray}};
+  map["add"] = {{&anka::add<int>, InternalFunctionType::Int_Int__Int},
+                {&anka::add<double>, InternalFunctionType::Double_Double__Double}};
+  map["sub"] = {{&anka::sub<int>, InternalFunctionType::Int_Int__Int},
+                {&anka::sub<double>, InternalFunctionType::Double_Double__Double}};
+  map["mul"] = {{&anka::mul<int>, InternalFunctionType::Int_Int__Int},
+                {&anka::mul<double>, InternalFunctionType::Double_Double__Double}};
+  map["div"] = {{&anka::div<int>, InternalFunctionType::Int_Int__Int},
+                {&anka::div<double>, InternalFunctionType::Double_Double__Double}};
   map["and"] = {{&anka::andFun, InternalFunctionType::Bool_Bool__Bool}};
   map["or"] = {{&anka::orFun, InternalFunctionType::Bool_Bool__Bool}};
   map["equals"] = {{&anka::equals<int>, InternalFunctionType::Int_Int_Bool},
+                   {&anka::equals<double>, InternalFunctionType::Double_Double_Bool},
                    {&anka::equals<bool>, InternalFunctionType::Bool_Bool__Bool}};
   map["not_equals"] = {{&anka::notEquals<int>, InternalFunctionType::Int_Int_Bool},
+                       {&anka::notEquals<double>, InternalFunctionType::Double_Double_Bool},
                        {&anka::notEquals<bool>, InternalFunctionType::Bool_Bool__Bool}};
   map["not"] = {{&anka::notFun, InternalFunctionType::Bool__Bool}};
 
@@ -138,20 +149,32 @@ auto anka::toString(InternalFunctionType type) -> std::string
     return "int -> (int)";
   case InternalFunctionType::Int__Int:
     return "int -> int";
-  case InternalFunctionType::Bool__Bool:
-    return "bool -> bool";
-  case InternalFunctionType::IntArray__Int:
-    return "(int) -> int";
-  case InternalFunctionType::IntArray__IntArray:
-    return "(int) -> (int)";
   case InternalFunctionType::Int_Int__Int:
     return "[int int] -> int";
   case InternalFunctionType::Int_Int_Bool:
     return "[int int] -> bool";
+  case InternalFunctionType::IntArray__Int:
+    return "(int) -> int";
+  case InternalFunctionType::IntArray__IntArray:
+    return "(int) -> (int)";
+  case InternalFunctionType::Bool__Bool:
+    return "bool -> bool";
   case InternalFunctionType::Bool_Bool__Bool:
     return "[bool bool] -> bool";
   case InternalFunctionType::BoolArray__Int:
     return "(bool) -> bool";
+  case InternalFunctionType::BoolArray__BoolArray:
+    return "(bool) -> (bool)";
+  case InternalFunctionType::Double__Double:
+    return "double -> double";
+  case InternalFunctionType::Double_Double__Double:
+    return "[double double] -> double";
+  case InternalFunctionType::Double_Double_Bool:
+    return "[double double] -> bool";
+  case InternalFunctionType::DoubleArray__Int:
+    return "(double) -> int";
+  case InternalFunctionType::DoubleArray__DoubleArray:
+    return "(double) -> (double)";
   }
 
   throw std::runtime_error("Fatal Error: Unexpected internal function type in toString function");

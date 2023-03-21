@@ -86,6 +86,10 @@ TEST_CASE("test number tokenizing")
   checkTokens("1 20 3",
               {anka::Token{anka::TokenType::NumberInt, 0, 1}, anka::Token{anka::TokenType::NumberInt, 2, 2},
                anka::Token{anka::TokenType::NumberInt, 5, 1}, anka::Token{anka::TokenType::SentenceEnd, 6, 0}});
+
+  checkTokens("1 20.0 3.0",
+              {anka::Token{anka::TokenType::NumberInt, 0, 1}, anka::Token{anka::TokenType::NumberDouble, 2, 4},
+               anka::Token{anka::TokenType::NumberDouble, 7, 3}, anka::Token{anka::TokenType::SentenceEnd, 10, 0}});
 }
 
 TEST_CASE("test name")

@@ -21,11 +21,13 @@ enum class WordType
 {
   IntegerNumber,
   IntegerArray,
+  DoubleNumber,
+  DoubleArray,
+  Boolean,
+  BooleanArray,
   Name,
   Context,
-  Tuple,
-  Boolean,
-  BooleanArray
+  Tuple
 };
 
 struct Word
@@ -45,6 +47,8 @@ struct Context
 {
   std::vector<int> integerNumbers;
   std::vector<std::vector<int>> integerArrays;
+  std::vector<double> doubleNumbers;
+  std::vector<std::vector<double>> doubleArrays;
   std::vector<bool> booleans;
   std::vector<std::vector<bool>> booleanArrays;
   std::vector<std::string> names;
@@ -65,6 +69,10 @@ template <typename T> T getValue(const Context &context, size_t index)
     return context.booleans[index];
   else if constexpr (std::is_same_v<T, const std::vector<bool> &>)
     return context.booleanArrays[index];
+  else if constexpr (std::is_same_v<T, double>)
+    return context.doubleNumbers[index];
+  else if constexpr (std::is_same_v<T, const std::vector<double> &>)
+    return context.doubleArrays[index];
   else
     []<bool flag = false>()
     {
@@ -86,8 +94,10 @@ auto toString(TokenType type) -> std::string;
 
 auto createWord(Context &context, int value) -> Word;
 auto createWord(Context &context, bool value) -> Word;
+auto createWord(Context &context, double value) -> Word;
 auto createWord(Context &context, std::vector<int> &&vec) -> Word;
 auto createWord(Context &context, std::vector<bool> &&vec) -> Word;
+auto createWord(Context &context, std::vector<double> &&vec) -> Word;
 auto createWord(Context &context, std::vector<anka::Word> &&vec) -> Word;
 
 auto getWord(const Context &context, const Word &input, size_t index) -> std::optional<Word>;
@@ -96,10 +106,14 @@ template <typename T> WordType getWordType()
 {
   if constexpr (std::is_same_v<T, int>)
     return WordType::IntegerNumber;
+  else if constexpr (std::is_same_v<T, double>)
+    return WordType::DoubleNumber;
   else if constexpr (std::is_same_v<T, std::string>)
     return WordType::Name;
   else if constexpr (std::is_same_v<T, const std::vector<int> &>)
     return WordType::IntegerArray;
+  else if constexpr (std::is_same_v<T, const std::vector<double> &>)
+    return WordType::DoubleArray;
   else if constexpr (std::is_same_v<T, const std::vector<anka::Word> &>)
     return WordType::Tuple;
   else if constexpr (std::is_same_v<T, bool>)
@@ -123,7 +137,7 @@ template <typename T> tl::optional<T> extractValue(const Context &context, const
   if (!wOpt)
     return tl::nullopt;
 
-  auto w = wOpt.value();
+  auto &&w = wOpt.value();
   if (w.type != getWordType<T>())
     return tl::nullopt;
 

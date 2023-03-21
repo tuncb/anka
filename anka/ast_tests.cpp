@@ -124,6 +124,17 @@ TEST_CASE("booleans")
   CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::Boolean, 0}, {WordType::Boolean, 1}});
 }
 
+TEST_CASE("doubles")
+{
+  using namespace anka;
+
+  auto ast = toAST("1.0 2.0");
+  REQUIRE_EQ(ast.sentences.size(), 1);
+  REQUIRE_EQ(ast.context.doubleNumbers.size(), 2);
+  CHECK_EQ(ast.context.doubleNumbers, std::vector<double>{1.0, 2.0});
+  CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::DoubleNumber, 0}, {WordType::DoubleNumber, 1}});
+}
+
 TEST_CASE("boolean array")
 {
   using namespace anka;
@@ -133,6 +144,17 @@ TEST_CASE("boolean array")
   REQUIRE_EQ(ast.context.booleanArrays.size(), 1);
   CHECK_EQ(ast.context.booleanArrays[0], std::vector<bool>{true, false});
   CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::BooleanArray, 0}});
+}
+
+TEST_CASE("double array")
+{
+  using namespace anka;
+
+  auto ast = toAST("(1.0 2.0)");
+  REQUIRE_EQ(ast.sentences.size(), 1);
+  REQUIRE_EQ(ast.context.doubleArrays.size(), 1);
+  CHECK_EQ(ast.context.doubleArrays[0], std::vector<double>{1.0, 2.0});
+  CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::DoubleArray, 0}});
 }
 
 TEST_CASE("names")

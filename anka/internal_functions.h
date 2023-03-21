@@ -12,13 +12,19 @@ enum class InternalFunctionType
 {
   Int__IntArray,
   Int__Int,
-  Bool__Bool,
-  IntArray__Int,
-  IntArray__IntArray,
   Int_Int__Int,
   Int_Int_Bool,
+  IntArray__Int,
+  IntArray__IntArray,
+  Bool__Bool,
   Bool_Bool__Bool,
   BoolArray__Int,
+  BoolArray__BoolArray,
+  Double__Double,
+  Double_Double__Double,
+  Double_Double_Bool,
+  DoubleArray__Int,
+  DoubleArray__DoubleArray,
 };
 
 auto toString(anka::InternalFunctionType type) -> std::string;

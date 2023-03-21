@@ -57,6 +57,13 @@ TEST_CASE("internal function overloads")
   CHECK_EQ(executeText("equals [true true]"), "true");
   CHECK_EQ(executeText("equals [true (false true)]"), "(false true)");
   CHECK_EQ(executeText("equals [(1 2 3) (1 3 4)]"), "(true false false)");
+  CHECK_EQ(executeText("inc 1.0"), "2.0");
+  CHECK_EQ(executeText("dec [1.0]"), "0.0");
+  CHECK_EQ(executeText("add [3.0 1.0]"), "4.0");
+  CHECK_EQ(executeText("sub [3.0 1.0]"), "2.0");
+  CHECK_EQ(executeText("mul [3.0 1.0]"), "3.0");
+  CHECK_EQ(executeText("div [3.0 1.0]"), "3.0");
+  CHECK_EQ(executeText("sort (3.0 4.0 1.0)"), "(1.0 3.0 4.0)");
 }
 
 TEST_CASE("single tuple arguments")

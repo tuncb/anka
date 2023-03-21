@@ -4,7 +4,7 @@
 
 auto isNumber(const char c) -> bool
 {
-  return (c >= '0' && c <= '9') || c == '-';
+  return (c >= '0' && c <= '9') || c == '-' || c == '.';
 }
 
 auto isEndLine(const char c) -> bool
@@ -71,7 +71,10 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
     {
       if (needSeparator)
         throw TokenizerError{i, ch};
-      tokens.push_back(Token{TokenType::NumberInt, i, parseContinuously(isNumber, content, i)});
+      auto len = parseContinuously(isNumber, content, i);
+      auto str = std::string_view(content.data() + i, len);
+      auto type = (str.find('.') != std::string_view::npos) ? TokenType::NumberDouble : TokenType::NumberInt;
+      tokens.push_back(Token{type, i, len});
       needSeparator = true;
     }
     else if (isName(ch))

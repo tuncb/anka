@@ -5,7 +5,7 @@ anka is an array programming language, heavily inspired by APL, q and haskell.
 ## Current features
 * Interpreter that can load a file.
 * REPL.
-* data types: int, bool, (int), (bool)
+* data types: int, bool, double, (int), (bool), (double)
 * internal functions: ioata, inc, dec, neg, abs, length...
 * basic pipeline support
 
@@ -81,8 +81,11 @@ See .\examples\arrayExamples.anka for ideas for the fully functional future vers
 ### Major features
 
 * atomic type None for optional support
-* atomic type double
-* atomic type array of double
+* atomic type string
+* atomic type array of string
+* array of arrays
 * user defined variables
 * user defined functions
 * import anka files to current context
+* currying
+* tuple operations

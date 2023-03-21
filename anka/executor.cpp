@@ -28,16 +28,22 @@ auto checkOverloadCompatibility(const anka::Context &context, anka::InternalFunc
   case InternalFunctionType::Int__IntArray:
   case InternalFunctionType::Int__Int:
     return first.value().type == WordType::IntegerNumber || first.value().type == WordType::IntegerArray;
-  case InternalFunctionType::Bool__Bool:
-    return first.value().type == WordType::Boolean || first.value().type == WordType::BooleanArray;
   case InternalFunctionType::IntArray__Int:
   case InternalFunctionType::IntArray__IntArray:
     return first.value().type == WordType::IntegerArray;
+  case InternalFunctionType::Double__Double:
+    return first.value().type == WordType::DoubleNumber || first.value().type == WordType::DoubleArray;
+  case InternalFunctionType::DoubleArray__Int:
+  case InternalFunctionType::DoubleArray__DoubleArray:
+    return first.value().type == WordType::DoubleArray;
+  case InternalFunctionType::Bool__Bool:
+    return first.value().type == WordType::Boolean || first.value().type == WordType::BooleanArray;
   case InternalFunctionType::BoolArray__Int:
+  case InternalFunctionType::BoolArray__BoolArray:
     return first.value().type == WordType::BooleanArray;
   };
 
-  auto second = anka::getWord(context, word, 0);
+  auto second = anka::getWord(context, word, 1);
   if (!second.has_value())
     return false;
 
@@ -50,6 +56,10 @@ auto checkOverloadCompatibility(const anka::Context &context, anka::InternalFunc
   case InternalFunctionType::Bool_Bool__Bool:
     return (first.value().type == WordType::Boolean || first.value().type == WordType::BooleanArray) &&
            (second.value().type == WordType::Boolean || second.value().type == WordType::BooleanArray);
+  case InternalFunctionType::Double_Double__Double:
+  case InternalFunctionType::Double_Double_Bool:
+    return (first.value().type == WordType::DoubleNumber || first.value().type == WordType::DoubleArray) &&
+           (second.value().type == WordType::DoubleNumber || second.value().type == WordType::DoubleArray);
   };
 
   return false;
@@ -196,20 +206,32 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
     return foldSingleArgumentNoRankPolyFunction<std::vector<int>, int>(context, input, func);
   case InternalFunctionType::Int__Int:
     return foldSingleArgumentWithRankPolyFunction<int, int>(context, input, func);
-  case InternalFunctionType::Bool__Bool:
-    return foldSingleArgumentWithRankPolyFunction<bool, bool>(context, input, func);
-  case InternalFunctionType::IntArray__Int:
-    return foldSingleArgumentNoRankPolyFunction<int, const std::vector<int> &>(context, input, func);
-  case InternalFunctionType::BoolArray__Int:
-    return foldSingleArgumentNoRankPolyFunction<int, const std::vector<bool> &>(context, input, func);
-  case InternalFunctionType::IntArray__IntArray:
-    return foldSingleArgumentNoRankPolyFunction<std::vector<int>, const std::vector<int> &>(context, input, func);
-  case InternalFunctionType::Int_Int__Int:
-    return foldTwoArgumentWithRankPolyFunction<int, int, int>(context, input, func);
-  case InternalFunctionType::Bool_Bool__Bool:
-    return foldTwoArgumentWithRankPolyFunction<bool, bool, bool>(context, input, func);
   case InternalFunctionType::Int_Int_Bool:
     return foldTwoArgumentWithRankPolyFunction<bool, int, int>(context, input, func);
+  case InternalFunctionType::Int_Int__Int:
+    return foldTwoArgumentWithRankPolyFunction<int, int, int>(context, input, func);
+  case InternalFunctionType::IntArray__IntArray:
+    return foldSingleArgumentNoRankPolyFunction<std::vector<int>, const std::vector<int> &>(context, input, func);
+  case InternalFunctionType::IntArray__Int:
+    return foldSingleArgumentNoRankPolyFunction<int, const std::vector<int> &>(context, input, func);
+  case InternalFunctionType::Bool__Bool:
+    return foldSingleArgumentWithRankPolyFunction<bool, bool>(context, input, func);
+  case InternalFunctionType::BoolArray__Int:
+    return foldSingleArgumentNoRankPolyFunction<int, const std::vector<bool> &>(context, input, func);
+  case InternalFunctionType::Bool_Bool__Bool:
+    return foldTwoArgumentWithRankPolyFunction<bool, bool, bool>(context, input, func);
+  case InternalFunctionType::BoolArray__BoolArray:
+    return foldSingleArgumentNoRankPolyFunction<std::vector<bool>, const std::vector<bool> &>(context, input, func);
+  case InternalFunctionType::Double__Double:
+    return foldSingleArgumentWithRankPolyFunction<double, double>(context, input, func);
+  case InternalFunctionType::Double_Double__Double:
+    return foldTwoArgumentWithRankPolyFunction<double, double, double>(context, input, func);
+  case InternalFunctionType::Double_Double_Bool:
+    return foldTwoArgumentWithRankPolyFunction<bool, double, double>(context, input, func);
+  case InternalFunctionType::DoubleArray__Int:
+    return foldSingleArgumentNoRankPolyFunction<int, const std::vector<int> &>(context, input, func);
+  case InternalFunctionType::DoubleArray__DoubleArray:
+    return foldSingleArgumentNoRankPolyFunction<std::vector<double>, const std::vector<double> &>(context, input, func);
   }
   return std::nullopt;
 }
