@@ -17,7 +17,7 @@ concept TokenForwardIterator =
 
 // Forward declerations
 auto extractTuple(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
-                  TokenForwardIterator auto tokensEnd) -> anka::Word;
+                  TokenForwardIterator auto tokensEnd, bool isConnected) -> anka::Word;
 auto extractArray(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
                   TokenForwardIterator auto tokensEnd) -> anka::Word;
 
@@ -72,6 +72,7 @@ auto extractWords(const std::string_view content, anka::Context &context, TokenF
   using namespace anka;
 
   std::vector<anka::Word> words;
+  auto isConnected = false;
   for (; tokenIter != tokensEnd;)
   {
     if (tokenIter->type == finisherType)
@@ -96,13 +97,18 @@ auto extractWords(const std::string_view content, anka::Context &context, TokenF
     case TokenType::Name:
       words.emplace_back(addNameWord(content, context, tokenIter));
       break;
+    case TokenType::Connector:
+      isConnected = true;
+      tokenIter++;
+      break;
     case TokenType::ArrayStart:
       ++tokenIter;
       words.emplace_back(extractArray(content, context, tokenIter, tokensEnd));
       break;
     case TokenType::TupleStart:
       ++tokenIter;
-      words.emplace_back(extractTuple(content, context, tokenIter, tokensEnd));
+      words.emplace_back(extractTuple(content, context, tokenIter, tokensEnd, isConnected));
+      isConnected = false;
       break;
     default:
       throw anka::ASTError{*tokenIter,
@@ -124,14 +130,15 @@ auto extractSentence(const std::string_view content, anka::Context &context, Tok
 }
 
 auto extractTuple(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
-                  TokenForwardIterator auto tokensEnd) -> anka::Word
+                  TokenForwardIterator auto tokensEnd, bool isConnected) -> anka::Word
 {
   using namespace anka;
 
-  auto words = extractWords(content, context, tokenIter, tokensEnd, {TokenType::SentenceEnd, TokenType::ArrayEnd},
-                            TokenType::TupleEnd);
-  return createWord(context, std::move(words));
-};
+  return createWord(context,
+                    anka::Tuple{extractWords(content, context, tokenIter, tokensEnd,
+                                             {TokenType::SentenceEnd, TokenType::ArrayEnd}, TokenType::TupleEnd),
+                                isConnected});
+}
 
 auto extractArray(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
                   TokenForwardIterator auto tokensEnd) -> anka::Word
@@ -233,7 +240,7 @@ auto anka::toString(const anka::Context &context, const anka::Word &word) -> std
   case WordType::Tuple: {
     std::vector<std::string> names;
     auto &&tup = context.tuples[word.index];
-    std::transform(tup.begin(), tup.end(), std::back_inserter(names),
+    std::transform(tup.words.begin(), tup.words.end(), std::back_inserter(names),
                    [&context](const Word &word) { return toString(context, word); });
     return fmt::format("[{}]", fmt::join(names, " "));
   }
@@ -281,9 +288,9 @@ auto anka::createWord(Context &context, double value) -> Word
   return anka::Word{anka::WordType::DoubleNumber, context.doubleNumbers.size() - 1};
 }
 
-auto anka::createWord(Context &context, std::vector<anka::Word> &&vec) -> Word
+auto anka::createWord(Context &context, Tuple &&tuple) -> Word
 {
-  context.tuples.push_back(std::move(vec));
+  context.tuples.push_back(std::move(tuple));
   return anka::Word{anka::WordType::Tuple, context.tuples.size() - 1};
 }
 
@@ -335,10 +342,20 @@ auto anka::getWord(const Context &context, const Word &input, size_t index) -> s
   if (input.type == WordType::Tuple)
   {
     const auto &tup = context.tuples[input.index];
-    if (tup.size() <= index)
+    if (tup.words.size() <= index)
       return std::nullopt;
-    return tup[index];
+    return tup.words[index];
   }
 
   return input;
+}
+
+auto anka::getWordCount(const Context &context, const Word &word) -> size_t
+{
+  if (word.type != WordType::Tuple)
+  {
+    return 1;
+  }
+
+  return getValue<const Tuple &>(context, word.index).words.size();
 }

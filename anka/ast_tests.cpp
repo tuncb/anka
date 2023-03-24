@@ -70,8 +70,9 @@ TEST_CASE("simple tuple")
 
   CHECK_EQ(ast.context.integerNumbers, std::vector<int>{1, 2, 3});
 
-  CHECK_EQ(ast.context.tuples[0],
+  CHECK_EQ(ast.context.tuples[0].words,
            std::vector<Word>{{WordType::IntegerNumber, 0}, {WordType::IntegerNumber, 1}, {WordType::IntegerNumber, 2}});
+  CHECK_FALSE(ast.context.tuples[0].isConnected);
   CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::Tuple, 0}});
 }
 
@@ -88,11 +89,13 @@ TEST_CASE("complex tuple")
   CHECK_EQ(ast.context.integerArrays[0], std::vector<int>{1, 2});
   CHECK_EQ(ast.context.integerNumbers, std::vector<int>{1, 3, 4, 11});
 
-  CHECK_EQ(ast.context.tuples[0], std::vector<Word>{{WordType::IntegerNumber, 1}, {WordType::IntegerNumber, 2}});
-  CHECK_EQ(ast.context.tuples[1], std::vector<Word>{{WordType::IntegerNumber, 0},
-                                                    {WordType::IntegerArray, 0},
-                                                    {WordType::Tuple, 0},
-                                                    {WordType::IntegerNumber, 3}});
+  CHECK_EQ(ast.context.tuples[0].words, std::vector<Word>{{WordType::IntegerNumber, 1}, {WordType::IntegerNumber, 2}});
+  CHECK_EQ(ast.context.tuples[1].words, std::vector<Word>{{WordType::IntegerNumber, 0},
+                                                          {WordType::IntegerArray, 0},
+                                                          {WordType::Tuple, 0},
+                                                          {WordType::IntegerNumber, 3}});
+  CHECK_FALSE(ast.context.tuples[0].isConnected);
+  CHECK_FALSE(ast.context.tuples[1].isConnected);
   CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::Tuple, 1}});
 }
 

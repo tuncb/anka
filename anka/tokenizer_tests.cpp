@@ -100,6 +100,14 @@ TEST_CASE("test name")
                anka::Token{anka::TokenType::NumberInt, 19, 1}, anka::Token{anka::TokenType::SentenceEnd, 20, 0}});
 }
 
+TEST_CASE("test name curry")
+{
+  checkTokens("ioata[5]",
+              {anka::Token{anka::TokenType::Name, 0, 5}, anka::Token{anka::TokenType::Connector, 5, 0},
+               anka::Token{anka::TokenType::TupleStart, 5, 1}, anka::Token{anka::TokenType::NumberInt, 6, 1},
+               anka::Token{anka::TokenType::TupleEnd, 7, 1}, anka::Token{anka::TokenType::SentenceEnd, 8, 0}});
+}
+
 TEST_CASE("no exceptions")
 {
   CHECK_NOTHROW(anka::extractTokens("40 (10 20 30)\n 50 (1 2 3)"));

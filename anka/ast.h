@@ -43,6 +43,12 @@ struct Sentence
   std::vector<Word> words;
 };
 
+struct Tuple
+{
+  std::vector<Word> words;
+  bool isConnected;
+};
+
 struct Context
 {
   std::vector<int> integerNumbers;
@@ -52,7 +58,7 @@ struct Context
   std::vector<bool> booleans;
   std::vector<std::vector<bool>> booleanArrays;
   std::vector<std::string> names;
-  std::vector<std::vector<Word>> tuples;
+  std::vector<Tuple> tuples;
 };
 
 template <typename T> T getValue(const Context &context, size_t index)
@@ -63,7 +69,7 @@ template <typename T> T getValue(const Context &context, size_t index)
     return context.names[index];
   else if constexpr (std::is_same_v<T, const std::vector<int> &>)
     return context.integerArrays[index];
-  else if constexpr (std::is_same_v<T, const std::vector<anka::Word> &>)
+  else if constexpr (std::is_same_v<T, const Tuple &>)
     return context.tuples[index];
   else if constexpr (std::is_same_v<T, bool>)
     return context.booleans[index];
@@ -98,7 +104,7 @@ auto createWord(Context &context, double value) -> Word;
 auto createWord(Context &context, std::vector<int> &&vec) -> Word;
 auto createWord(Context &context, std::vector<bool> &&vec) -> Word;
 auto createWord(Context &context, std::vector<double> &&vec) -> Word;
-auto createWord(Context &context, std::vector<anka::Word> &&vec) -> Word;
+auto createWord(Context &context, Tuple &&tuple) -> Word;
 
 auto getWord(const Context &context, const Word &input, size_t index) -> std::optional<Word>;
 
@@ -143,5 +149,7 @@ template <typename T> tl::optional<T> extractValue(const Context &context, const
 
   return getValue<T>(context, w.index);
 }
+
+auto getWordCount(const Context &context, const Word &word) -> size_t;
 
 } // namespace anka

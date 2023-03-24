@@ -15,9 +15,10 @@ struct TokenizerError
 enum class TokenType
 {
   ArrayStart,
+  ArrayEnd,
+  Connector,
   NumberInt,
   NumberDouble,
-  ArrayEnd,
   SentenceEnd,
   Name,
   TupleStart,

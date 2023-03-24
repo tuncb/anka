@@ -95,4 +95,10 @@ TEST_CASE("mismatch errors")
   CHECK_THROWS_AS(executeText("(10) (20 40)"), const anka::ExecutionError &);
 }
 
+TEST_CASE("connected tuples")
+{
+  CHECK_EQ(executeText("add[10] 20"), "30");
+  CHECK_THROWS_AS(executeText("add [10] 20"), const anka::ExecutionError &);
+}
+
 #endif

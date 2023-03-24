@@ -84,6 +84,9 @@ template <typename R, typename T1, typename T2>
 auto foldTwoArgumentWithRankPolyFunction(anka::Context &context, const anka::Word &input,
                                          const anka::InternalFunction &func) -> std::optional<anka::Word>
 {
+  if (anka::getWordCount(context, input) != 2)
+    return std::nullopt;
+
   typedef R (*RealFuncType)(T1, T2);
   auto funcptr = (RealFuncType)func.ptr;
 
@@ -154,6 +157,9 @@ template <typename R, typename T>
 auto foldSingleArgumentWithRankPolyFunction(anka::Context &context, const anka::Word &input,
                                             const anka::InternalFunction &func) -> std::optional<anka::Word>
 {
+  if (anka::getWordCount(context, input) != 1)
+    return std::nullopt;
+
   typedef R (*RealFuncType)(T);
   auto funcptr = (RealFuncType)func.ptr;
 
@@ -185,6 +191,9 @@ template <typename R, typename T>
 auto foldSingleArgumentNoRankPolyFunction(anka::Context &context, const anka::Word &input,
                                           const anka::InternalFunction &func) -> std::optional<anka::Word>
 {
+  if (anka::getWordCount(context, input) != 1)
+    return std::nullopt;
+
   const auto &valOpt = extractValue<T>(context, input, 0);
   if (!valOpt)
     return std::nullopt;
@@ -236,6 +245,20 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
   return std::nullopt;
 }
 
+auto foldtuple(anka::Context &context, const anka::Word &w1, const anka::Word &w2) -> anka::Word
+{
+  auto &&tup = anka::getValue<const anka::Tuple &>(context, w2.index);
+  if (!tup.isConnected)
+  {
+    throw anka::ExecutionError(w1, w2, "Could not fold to unconnected tuple.");
+  }
+
+  auto words = tup.words;
+  words.push_back(w1);
+
+  return anka::createWord(context, {std::move(words), false});
+}
+
 auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) -> anka::Word
 {
   using namespace anka;
@@ -248,6 +271,7 @@ auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) ->
     }
     throw anka::ExecutionError{w1, std::nullopt, "Could not find name."};
   }
+
   if (w2.type == WordType::Name)
   {
     const auto &name = context.names[w2.index];
@@ -262,6 +286,10 @@ auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) ->
       return wordOpt.value();
     }
     throw anka::ExecutionError{std::nullopt, w2, "Could not find name."};
+  }
+  else if (w2.type == WordType::Tuple)
+  {
+    return foldtuple(context, w1, w2);
   }
 
   throw anka::ExecutionError{w1, w2, "Could not fold words."};

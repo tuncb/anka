@@ -1,6 +1,7 @@
 #include "tokenizer.h"
 
 #include <cctype>
+#include <optional>
 
 auto isNumber(const char c) -> bool
 {
@@ -32,6 +33,14 @@ auto parseContinuously(Predicate predicate, const std::string_view content, size
   return std::distance(b, next);
 }
 
+auto parseUntil(const std::string_view content, size_t start, const char *ch) -> std::optional<size_t>
+{
+  auto pos = content.find_first_of(ch, start);
+  if (pos == std::string_view::npos)
+    return std::nullopt;
+  return pos - start;
+}
+
 auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
 {
   std::vector<Token> tokens;
@@ -42,6 +51,7 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
   constexpr const char tuple_end_char = ']';
 
   auto needSeparator = false;
+  auto addConnector = false;
 
   size_t i = 0;
   while (i < content.size())
@@ -81,7 +91,15 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
     {
       if (needSeparator)
         throw TokenizerError{i, ch};
-      tokens.push_back(Token{TokenType::Name, i, parseContinuously(isName, content, i)});
+
+      auto len = parseContinuously(isName, content, i);
+      tokens.push_back(Token{TokenType::Name, i, len});
+
+      // a name connected to a tuple
+      if (i + len < content.size() && content[i + len] == tuple_start_char)
+      {
+        addConnector = true;
+      }
       needSeparator = true;
     }
     else if (isEndLine(ch))
@@ -101,6 +119,12 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
     }
 
     i = i + tokens.back().len;
+    if (addConnector)
+    {
+      const auto &lastToken = tokens.back();
+      tokens.push_back({TokenType::Connector, lastToken.token_start + lastToken.len, 0});
+      addConnector = false;
+    }
   }
 
   if (tokens.size() > 0 && tokens.back().type != TokenType::SentenceEnd)
