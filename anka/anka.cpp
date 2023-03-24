@@ -22,6 +22,10 @@
 #include "internal_functions.h"
 #include "tokenizer.h"
 
+const auto constexpr MAJOR_VERSION = "0";
+const auto constexpr MINOR_VERSION = "1";
+const auto constexpr PATCH_VERSION = "0";
+
 auto readFile(const char *filename) -> std::string
 {
   std::ifstream t(filename);
@@ -174,12 +178,15 @@ int main(int argc, char *argv[])
 {
   using namespace argumentum;
 
+  const auto appDesc = std::format("anka {}.{}.{}", MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
+
   std::optional<std::string> filenameOpt;
   auto runRepl = false;
 
   auto parser = argument_parser{};
   auto params = parser.params();
-  parser.config().program(argv[0]).description("Anka");
+  parser.config().program(argv[0]).description(appDesc);
+  parser.add_default_help_option();
   params.add_parameter(filenameOpt, "--filename", "-f").nargs(1).help("File name to process");
   params.add_parameter(runRepl, "--repl", "-r").nargs(0).help("Run REPL");
 
@@ -188,7 +195,14 @@ int main(int argc, char *argv[])
 
   anka::Context context;
 
-  if (filenameOpt.has_value())
+  std::cout << appDesc << "\n";
+
+  if (!filenameOpt && !runRepl)
+  {
+    std::cerr << "No argument given, use '-h' to see the vailable options.\n";
+  }
+
+  if (filenameOpt)
   {
     const auto filename = filenameOpt.value();
     std::cout << "anka: " << std::format("Processing file: {}.\n", filename);
