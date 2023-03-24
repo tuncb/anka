@@ -3,6 +3,11 @@
 #include <cctype>
 #include <optional>
 
+auto isDigit(const char c) -> bool
+{
+  return (c >= '0' && c <= '9');
+}
+
 auto isNumber(const char c) -> bool
 {
   return (c >= '0' && c <= '9') || c == '-' || c == '.';
@@ -49,6 +54,7 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
   constexpr const char array_end_char = ')';
   constexpr const char tuple_start_char = '[';
   constexpr const char tuple_end_char = ']';
+  constexpr const char placeholder_start_char = '_';
 
   auto needSeparator = false;
   auto addConnector = false;
@@ -77,6 +83,11 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
       tokens.push_back(Token{TokenType::TupleEnd, i, 1});
       needSeparator = false;
     }
+    else if (ch == placeholder_start_char)
+    {
+      auto len = parseContinuously(isDigit, content, i + 1);
+      tokens.push_back({TokenType::Placeholder, i, len + 1});
+    }
     else if (isNumber(ch))
     {
       if (needSeparator)
@@ -100,6 +111,7 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
       {
         addConnector = true;
       }
+
       needSeparator = true;
     }
     else if (isEndLine(ch))
@@ -122,7 +134,7 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
     if (addConnector)
     {
       const auto &lastToken = tokens.back();
-      tokens.push_back({TokenType::Connector, lastToken.token_start + lastToken.len, 0});
+      tokens.push_back({TokenType::Connector, lastToken.start + lastToken.len, 0});
       addConnector = false;
     }
   }
@@ -132,4 +144,31 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
     tokens.push_back(Token{TokenType::SentenceEnd, content.size(), 0});
   }
   return tokens;
+}
+
+auto anka::toString(TokenType type) -> std::string
+{
+  switch (type)
+  {
+  case TokenType::NumberInt:
+    return "integer";
+  case TokenType::NumberDouble:
+    return "double";
+  case TokenType::Name:
+    return "name";
+  case TokenType::ArrayStart:
+    return "array start '('";
+  case TokenType::ArrayEnd:
+    return "array end ')'";
+  case TokenType::TupleStart:
+    return "tuple start '['";
+  case TokenType::TupleEnd:
+    return "tuple end ']'";
+  case TokenType::SentenceEnd:
+    return "sentence end";
+  case TokenType::Placeholder:
+    return "placeholder";
+  default:
+    throw(std::runtime_error("Fatal error: Unexpected token type"));
+  }
 }

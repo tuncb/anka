@@ -66,7 +66,7 @@ auto execute(anka::Context &&context, const std::string_view content) -> std::op
     if (err.tokenOpt.has_value())
     {
       auto t = err.tokenOpt.value();
-      std::cerr << std::format("Token start: {}, length: {}.\n", t.token_start, t.len);
+      std::cerr << std::format("Token start: {}, length: {}.\n", t.start, t.len);
     }
     return std::nullopt;
   }

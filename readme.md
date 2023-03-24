@@ -8,6 +8,8 @@ anka is an array programming language, heavily inspired by APL, q and haskell.
 * data types: int, bool, double, (int), (bool), (double)
 * internal functions: ioata, inc, dec, neg, abs, length...
 * basic pipeline support
+* placeholders
+* basic tuple operations
 
 ## What you can do now
 ```
@@ -87,5 +89,4 @@ See .\examples\arrayExamples.anka for ideas for the fully functional future vers
 * user defined variables
 * user defined functions
 * import anka files to current context
-* currying
 * tuple operations

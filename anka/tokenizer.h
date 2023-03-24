@@ -22,13 +22,16 @@ enum class TokenType
   SentenceEnd,
   Name,
   TupleStart,
-  TupleEnd
+  TupleEnd,
+  Placeholder
 };
+
+auto toString(TokenType type) -> std::string;
 
 struct Token
 {
   TokenType type;
-  size_t token_start = 0;
+  size_t start = 0;
   size_t len = 0;
 
   auto operator<=>(const Token &) const = default;

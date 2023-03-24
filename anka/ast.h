@@ -27,7 +27,8 @@ enum class WordType
   BooleanArray,
   Name,
   Context,
-  Tuple
+  Tuple,
+  PlaceHolder
 };
 
 struct Word
@@ -47,6 +48,11 @@ struct Tuple
 {
   std::vector<Word> words;
   bool isConnected;
+};
+
+struct PlaceHolder
+{
+  size_t index;
 };
 
 struct Context
@@ -96,7 +102,6 @@ struct AST
 auto parseAST(const std::string_view content, std::span<Token> tokens, Context &&context) -> AST;
 
 auto toString(const anka::Context &context, const anka::Word &word) -> std::string;
-auto toString(TokenType type) -> std::string;
 
 auto createWord(Context &context, int value) -> Word;
 auto createWord(Context &context, bool value) -> Word;
@@ -107,6 +112,7 @@ auto createWord(Context &context, std::vector<double> &&vec) -> Word;
 auto createWord(Context &context, Tuple &&tuple) -> Word;
 
 auto getWord(const Context &context, const Word &input, size_t index) -> std::optional<Word>;
+auto getAllWords(const Context &context, const Word &input) -> std::vector<Word>;
 
 template <typename T> WordType getWordType()
 {

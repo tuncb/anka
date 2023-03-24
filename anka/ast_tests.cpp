@@ -160,6 +160,21 @@ TEST_CASE("double array")
   CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::DoubleArray, 0}});
 }
 
+TEST_CASE("placeholders")
+{
+  using namespace anka;
+
+  auto ast = toAST("[_ _1 _2]");
+  REQUIRE_EQ(ast.sentences.size(), 1);
+  CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::Tuple, 0}});
+  auto &&words = getValue<const Tuple &>(ast.context, 0).words;
+  CHECK_EQ(words, std::vector<Word>{
+                      {WordType::PlaceHolder, 0},
+                      {WordType::PlaceHolder, 1},
+                      {WordType::PlaceHolder, 2},
+                  });
+}
+
 TEST_CASE("names")
 {
   using namespace anka;

@@ -118,4 +118,13 @@ TEST_CASE("test tokenizing error: foreign character")
   CHECK_THROWS_AS(anka::extractTokens("(12 23 45t)"), const anka::TokenizerError &);
 }
 
+TEST_CASE("placeholders")
+{
+  checkTokens("[5 _ _1 _2 3]",
+              {anka::Token{anka::TokenType::TupleStart, 0, 1}, anka::Token{anka::TokenType::NumberInt, 1, 1},
+               anka::Token{anka::TokenType::Placeholder, 3, 1}, anka::Token{anka::TokenType::Placeholder, 5, 2},
+               anka::Token{anka::TokenType::Placeholder, 8, 2}, anka::Token{anka::TokenType::NumberInt, 11, 1},
+               anka::Token{anka::TokenType::TupleEnd, 12, 1}, anka::Token{anka::TokenType::SentenceEnd, 13, 0}});
+}
+
 #endif

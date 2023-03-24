@@ -1,5 +1,6 @@
 #include "executor.h"
 
+#include <format>
 #include <numeric>
 
 #include <range/v3/view/drop.hpp>
@@ -245,18 +246,51 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
   return std::nullopt;
 }
 
+auto foldConnectedTuple(anka::Context &context, const std::vector<anka::Word> &tupleWords, const anka::Word &word)
+    -> anka::Word
+{
+  auto words = tupleWords;
+  auto newWords = anka::getAllWords(context, word);
+  words.insert(words.end(), newWords.begin(), newWords.end());
+  return anka::createWord(context, {std::move(words), false});
+}
+
+auto foldUnconnectedTuple(anka::Context &context, const std::vector<anka::Word> &tupleWords, const anka::Word &word)
+    -> anka::Word
+{
+  using namespace anka;
+  std::vector<Word> words;
+  auto wordsToBeInserted = anka::getAllWords(context, word);
+
+  for (auto &&w : tupleWords)
+  {
+    if (w.type == WordType::PlaceHolder)
+    {
+      if (w.index == 0)
+      {
+        words.insert(words.end(), wordsToBeInserted.begin(), wordsToBeInserted.end());
+      }
+      else
+      {
+        auto idx = w.index - 1;
+        if (idx < 0 || idx >= wordsToBeInserted.size())
+          throw anka::ExecutionError{word, std::nullopt, std::format("Placeholder {} is out of range.", w.index)};
+        words.push_back(wordsToBeInserted[idx]);
+      }
+    }
+    else
+    {
+      words.push_back(w);
+    }
+  }
+  return anka::createWord(context, {std::move(words), false});
+}
+
 auto foldtuple(anka::Context &context, const anka::Word &w1, const anka::Word &w2) -> anka::Word
 {
   auto &&tup = anka::getValue<const anka::Tuple &>(context, w2.index);
-  if (!tup.isConnected)
-  {
-    throw anka::ExecutionError(w1, w2, "Could not fold to unconnected tuple.");
-  }
-
-  auto words = tup.words;
-  words.push_back(w1);
-
-  return anka::createWord(context, {std::move(words), false});
+  auto ret = foldUnconnectedTuple(context, tup.words, w1);
+  return ret;
 }
 
 auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) -> anka::Word

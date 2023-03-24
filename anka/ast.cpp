@@ -21,10 +21,18 @@ auto extractTuple(const std::string_view content, anka::Context &context, TokenF
 auto extractArray(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
                   TokenForwardIterator auto tokensEnd) -> anka::Word;
 
-template <typename T> auto toNumber(const std::string_view content, anka::Token token) -> T
+template <typename T> auto throwNumberTokenError(const std::string_view content, anka::Token token) -> T
 {
-  auto b = &(content[token.token_start]);
+  auto b = &(content[token.start]);
   auto e = b + token.len;
+  auto msg = std::format("Expected number, found: {}", std::string(b, e));
+  throw anka::ASTError({token, msg});
+}
+
+template <typename T> auto toNumber(const std::string_view content, size_t pos, size_t len) -> std::optional<T>
+{
+  auto b = &(content[pos]);
+  auto e = b + len;
   T value = 0;
   auto res = std::from_chars(b, e, value);
   if (res.ec == std::errc{} && res.ptr == e)
@@ -32,8 +40,16 @@ template <typename T> auto toNumber(const std::string_view content, anka::Token 
     return value;
   }
 
-  auto msg = std::format("Expected number, found: {}", std::string(b, e));
-  throw anka::ASTError({token, msg});
+  return std::nullopt;
+}
+
+template <typename T> auto toNumber(const std::string_view content, anka::Token token) -> T
+{
+  auto valueOpt = toNumber<T>(content, token.start, token.len);
+  if (valueOpt)
+    return valueOpt.value();
+
+  return throwNumberTokenError<T>(content, token);
 }
 
 template <typename T>
@@ -45,11 +61,23 @@ auto addNumberWord(const std::string_view content, anka::Context &context, Token
   return createWord(context, value);
 }
 
+auto addPlaceHolderWord(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter)
+    -> anka::Word
+{
+  auto token = *(tokenIter++);
+  auto indexOpt = token.len == 1 ? 0 : toNumber<size_t>(content, token.start + 1, token.len - 1);
+
+  if (indexOpt)
+    return anka::Word{anka::WordType::PlaceHolder, indexOpt.value()};
+
+  return throwNumberTokenError<anka::Word>(content, token);
+}
+
 auto addNameWord(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter)
     -> anka::Word
 {
   auto token = *(tokenIter++);
-  auto value = std::string(content.data() + token.token_start, content.data() + token.token_start + token.len);
+  auto value = std::string(content.data() + token.start, content.data() + token.start + token.len);
 
   if (value == "true")
   {
@@ -93,6 +121,9 @@ auto extractWords(const std::string_view content, anka::Context &context, TokenF
       break;
     case TokenType::NumberDouble:
       words.emplace_back(addNumberWord<double>(content, context, tokenIter));
+      break;
+    case TokenType::Placeholder:
+      words.emplace_back(addPlaceHolderWord(content, context, tokenIter));
       break;
     case TokenType::Name:
       words.emplace_back(addNameWord(content, context, tokenIter));
@@ -312,31 +343,6 @@ auto anka::createWord(Context &context, std::vector<double> &&vec) -> Word
   return anka::Word{anka::WordType::DoubleArray, context.doubleArrays.size() - 1};
 }
 
-auto anka::toString(TokenType type) -> std::string
-{
-  switch (type)
-  {
-  case TokenType::NumberInt:
-    return "integer";
-  case TokenType::NumberDouble:
-    return "double";
-  case TokenType::Name:
-    return "name";
-  case TokenType::ArrayStart:
-    return "array start '('";
-  case TokenType::ArrayEnd:
-    return "array end ')'";
-  case TokenType::TupleStart:
-    return "tuple start '['";
-  case TokenType::TupleEnd:
-    return "tuple end ']'";
-  case TokenType::SentenceEnd:
-    return "sentence end";
-  default:
-    throw(std::runtime_error("Fatal error: Unexpected token type"));
-  }
-}
-
 auto anka::getWord(const Context &context, const Word &input, size_t index) -> std::optional<Word>
 {
   if (input.type == WordType::Tuple)
@@ -348,6 +354,17 @@ auto anka::getWord(const Context &context, const Word &input, size_t index) -> s
   }
 
   return input;
+}
+
+auto anka::getAllWords(const Context &context, const Word &input) -> std::vector<Word>
+{
+  if (input.type == WordType::Tuple)
+  {
+    const auto &tup = context.tuples[input.index];
+    return tup.words;
+  }
+
+  return {input};
 }
 
 auto anka::getWordCount(const Context &context, const Word &word) -> size_t
