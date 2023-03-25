@@ -116,6 +116,12 @@ auto none_of(const std::vector<bool> &vec) -> bool
   return std::none_of(vec.begin(), vec.end(), std::identity());
 }
 
+template <typename T>
+auto to_double(T val) -> double
+{
+  return val;
+}
+
 } // namespace anka
 
 auto anka::getInternalFunctions() -> const std::unordered_map<std::string, std::vector<anka::InternalFunction>> &
@@ -162,6 +168,8 @@ auto anka::getInternalFunctions() -> const std::unordered_map<std::string, std::
   map["none_of"] = {{&anka::none_of, InternalFunctionType::BoolArray__Bool}};
   map["sum"] = {{&anka::sum<int>, InternalFunctionType::IntArray__Int},
                 {&anka::sum<double>, InternalFunctionType::DoubleArray__Double}};
+  map["to_double"] = {{&anka::to_double<int>, InternalFunctionType::Int__Double},
+                      {&anka::to_double<double>, InternalFunctionType::Double__Double}};
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();
@@ -175,6 +183,8 @@ auto anka::toString(InternalFunctionType type) -> std::string
     return "int -> (int)";
   case InternalFunctionType::Int__Int:
     return "int -> int";
+  case InternalFunctionType::Int__Double:
+    return "int -> double";
   case InternalFunctionType::Int_Int__Int:
     return "[int int] -> int";
   case InternalFunctionType::Int_Int_Bool:

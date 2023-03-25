@@ -14,6 +14,7 @@ enum class InternalFunctionType
   Int__Int,
   Int_Int__Int,
   Int_Int_Bool,
+  Int__Double,
   IntArray__Int,
   IntArray__IntArray,
   Bool__Bool,
