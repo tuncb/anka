@@ -101,6 +101,21 @@ template <typename T> auto sum(const std::vector<T> &vec) -> T
   return std::accumulate(vec.begin(), vec.end(), (T)0);
 }
 
+auto all_of(const std::vector<bool> &vec) -> bool
+{
+  return std::all_of(vec.begin(), vec.end(), std::identity());
+}
+
+auto any_of(const std::vector<bool> &vec) -> bool
+{
+  return std::any_of(vec.begin(), vec.end(), std::identity());
+}
+
+auto none_of(const std::vector<bool> &vec) -> bool
+{
+  return std::none_of(vec.begin(), vec.end(), std::identity());
+}
+
 } // namespace anka
 
 auto anka::getInternalFunctions() -> const std::unordered_map<std::string, std::vector<anka::InternalFunction>> &
@@ -142,6 +157,9 @@ auto anka::getInternalFunctions() -> const std::unordered_map<std::string, std::
                        {&anka::notEquals<double>, InternalFunctionType::Double_Double_Bool},
                        {&anka::notEquals<bool>, InternalFunctionType::Bool_Bool__Bool}};
   map["not"] = {{&anka::notFun, InternalFunctionType::Bool__Bool}};
+  map["all_of"] = {{&anka::all_of, InternalFunctionType::BoolArray__Bool}};
+  map["any_of"] = {{&anka::any_of, InternalFunctionType::BoolArray__Bool}};
+  map["none_of"] = {{&anka::none_of, InternalFunctionType::BoolArray__Bool}};
   map["sum"] = {{&anka::sum<int>, InternalFunctionType::IntArray__Int},
                 {&anka::sum<double>, InternalFunctionType::DoubleArray__Double}};
 
@@ -170,6 +188,8 @@ auto anka::toString(InternalFunctionType type) -> std::string
   case InternalFunctionType::Bool_Bool__Bool:
     return "[bool bool] -> bool";
   case InternalFunctionType::BoolArray__Int:
+    return "(bool) -> int";
+  case InternalFunctionType::BoolArray__Bool:
     return "(bool) -> bool";
   case InternalFunctionType::BoolArray__BoolArray:
     return "(bool) -> (bool)";

@@ -20,6 +20,7 @@ enum class InternalFunctionType
   Bool_Bool__Bool,
   BoolArray__Int,
   BoolArray__BoolArray,
+  BoolArray__Bool,
   Double__Double,
   Double_Double__Double,
   Double_Double_Bool,

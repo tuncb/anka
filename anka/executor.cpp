@@ -44,6 +44,7 @@ auto checkOverloadCompatibility(const anka::Context &context, anka::InternalFunc
   case InternalFunctionType::Bool__Bool:
     return first.value().type == WordType::Boolean || first.value().type == WordType::BooleanArray;
   case InternalFunctionType::BoolArray__Int:
+  case InternalFunctionType::BoolArray__Bool:
   case InternalFunctionType::BoolArray__BoolArray:
     return first.value().type == WordType::BooleanArray;
   };
@@ -232,6 +233,8 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
     return foldSingleArgumentWithRankPolyFunction<bool, bool>(context, input, func);
   case InternalFunctionType::BoolArray__Int:
     return foldSingleArgumentNoRankPolyFunction<int, const std::vector<bool> &>(context, input, func);
+  case InternalFunctionType::BoolArray__Bool:
+    return foldSingleArgumentNoRankPolyFunction<bool, const std::vector<bool> &>(context, input, func);
   case InternalFunctionType::Bool_Bool__Bool:
     return foldTwoArgumentWithRankPolyFunction<bool, bool, bool>(context, input, func);
   case InternalFunctionType::BoolArray__BoolArray:
