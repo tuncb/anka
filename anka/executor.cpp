@@ -18,6 +18,16 @@ auto nameExists(const std::string &name) -> bool
   return iter != internalFunctions.end();
 }
 
+auto isDoubleType(const anka::Word &word) -> bool
+{
+  return word.type == anka::WordType::DoubleNumber || word.type == anka::WordType::DoubleArray;
+}
+
+auto isIntegerType(const anka::Word &word) -> bool
+{
+  return word.type == anka::WordType::IntegerNumber || word.type == anka::WordType::IntegerArray;
+}
+
 auto checkOverloadCompatibility(const anka::Context &context, anka::InternalFunctionType type, const anka::Word &word)
     -> bool
 {
@@ -63,9 +73,13 @@ auto checkOverloadCompatibility(const anka::Context &context, anka::InternalFunc
     return (first.value().type == WordType::Boolean || first.value().type == WordType::BooleanArray) &&
            (second.value().type == WordType::Boolean || second.value().type == WordType::BooleanArray);
   case InternalFunctionType::Double_Double__Double:
-  case InternalFunctionType::Double_Double_Bool:
-    return (first.value().type == WordType::DoubleNumber || first.value().type == WordType::DoubleArray) &&
-           (second.value().type == WordType::DoubleNumber || second.value().type == WordType::DoubleArray);
+  case InternalFunctionType::Double_Double_Bool: {
+    if (isDoubleType(first.value()) && isDoubleType(second.value()))
+      return true;
+    // Automatic int to double conversions
+    return (isIntegerType(first.value()) && isDoubleType(second.value())) ||
+           (isIntegerType(second.value()) && isDoubleType(first.value()));
+  }
   };
 
   return false;
@@ -86,15 +100,14 @@ auto findOverload(const anka::Context &context, const std::string &name, const a
   return std::nullopt;
 }
 
-template <typename R, typename T1, typename T2>
+template <typename R, typename T1, typename T2, typename FuncType = R (*)(T1, T2)>
 auto foldTwoArgumentWithRankPolyFunction(anka::Context &context, const anka::Word &input,
                                          const anka::InternalFunction &func) -> std::optional<anka::Word>
 {
   if (anka::getWordCount(context, input) != 2)
     return std::nullopt;
 
-  typedef R (*RealFuncType)(T1, T2);
-  auto funcptr = (RealFuncType)func.ptr;
+  auto funcptr = (FuncType)func.ptr;
 
   auto opt1 = extractValue<T1>(context, input, 0);
   auto opt2 = extractValue<T2>(context, input, 1);
@@ -211,6 +224,30 @@ auto foldSingleArgumentNoRankPolyFunction(anka::Context &context, const anka::Wo
   return anka::createWord(context, std::move(output));
 }
 
+template <typename ReturnType>
+auto foldDouble_Double__RVariations(anka::Context &context, const anka::Word &input,
+                                         const anka::InternalFunction &func) -> std::optional<anka::Word>
+{
+  typedef ReturnType (*FuncType)(double, double);
+
+  if (anka::getWordCount(context, input) != 2)
+    return std::nullopt;
+
+  auto first = anka::getWord(context, input, 0).value();
+  auto second = anka::getWord(context, input, 1).value();
+
+  if (isDoubleType(first) && isDoubleType(second))
+    return foldTwoArgumentWithRankPolyFunction<ReturnType, double, double>(context, input, func);
+
+  if (isDoubleType(first) && isIntegerType(second))
+    return foldTwoArgumentWithRankPolyFunction<ReturnType, double, int, FuncType>(context, input, func);
+
+  if (isDoubleType(second) && isIntegerType(first))
+    return foldTwoArgumentWithRankPolyFunction<ReturnType, int, double, FuncType>(context, input, func);
+
+  return std::nullopt;
+}
+
 auto foldFunction(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
     -> std::optional<anka::Word>
 {
@@ -242,9 +279,9 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
   case InternalFunctionType::Double__Double:
     return foldSingleArgumentWithRankPolyFunction<double, double>(context, input, func);
   case InternalFunctionType::Double_Double__Double:
-    return foldTwoArgumentWithRankPolyFunction<double, double, double>(context, input, func);
+    return foldDouble_Double__RVariations<double>(context, input, func);
   case InternalFunctionType::Double_Double_Bool:
-    return foldTwoArgumentWithRankPolyFunction<bool, double, double>(context, input, func);
+    return foldDouble_Double__RVariations<bool>(context, input, func);
   case InternalFunctionType::DoubleArray__Int:
     return foldSingleArgumentNoRankPolyFunction<int, const std::vector<double> &>(context, input, func);
   case InternalFunctionType::DoubleArray__Double:

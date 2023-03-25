@@ -111,4 +111,12 @@ TEST_CASE("executors")
   CHECK_THROWS_AS(executeText("add |add [1] _1| 30"), const anka::ExecutionError &);
 }
 
+TEST_CASE("double int interchange")
+{
+  CHECK_EQ(executeText("add [10 1.2]"), "11.2");
+  CHECK_EQ(executeText("add [1.2 10]"), "11.2");
+  CHECK_EQ(executeText("equals [1 1.0]"), "true");
+  CHECK_EQ(executeText("equals [1.0 1]"), "true");
+  CHECK_EQ(executeText("equals [1.01 1]"), "false");
+}
 #endif
