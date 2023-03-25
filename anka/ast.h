@@ -28,7 +28,8 @@ enum class WordType
   Name,
   Context,
   Tuple,
-  PlaceHolder
+  PlaceHolder,
+  Executor
 };
 
 struct Word
@@ -50,6 +51,11 @@ struct Tuple
   bool isConnected;
 };
 
+struct Executor
+{
+  std::vector<Word> words;
+};
+
 struct PlaceHolder
 {
   size_t index;
@@ -65,6 +71,7 @@ struct Context
   std::vector<std::vector<bool>> booleanArrays;
   std::vector<std::string> names;
   std::vector<Tuple> tuples;
+  std::vector<Executor> executors;
 };
 
 template <typename T> T getValue(const Context &context, size_t index)
@@ -77,6 +84,8 @@ template <typename T> T getValue(const Context &context, size_t index)
     return context.integerArrays[index];
   else if constexpr (std::is_same_v<T, const Tuple &>)
     return context.tuples[index];
+  else if constexpr (std::is_same_v<T, const Executor &>)
+    return context.executors[index];
   else if constexpr (std::is_same_v<T, bool>)
     return context.booleans[index];
   else if constexpr (std::is_same_v<T, const std::vector<bool> &>)
@@ -110,6 +119,7 @@ auto createWord(Context &context, std::vector<int> &&vec) -> Word;
 auto createWord(Context &context, std::vector<bool> &&vec) -> Word;
 auto createWord(Context &context, std::vector<double> &&vec) -> Word;
 auto createWord(Context &context, Tuple &&tuple) -> Word;
+auto createWord(Context &context, Executor &&executor) -> Word;
 
 auto getWord(const Context &context, const Word &input, size_t index) -> std::optional<Word>;
 auto getAllWords(const Context &context, const Word &input) -> std::vector<Word>;
@@ -126,8 +136,6 @@ template <typename T> WordType getWordType()
     return WordType::IntegerArray;
   else if constexpr (std::is_same_v<T, const std::vector<double> &>)
     return WordType::DoubleArray;
-  else if constexpr (std::is_same_v<T, const std::vector<anka::Word> &>)
-    return WordType::Tuple;
   else if constexpr (std::is_same_v<T, bool>)
     return WordType::Boolean;
   else if constexpr (std::is_same_v<T, const std::vector<bool> &>)

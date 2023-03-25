@@ -20,6 +20,8 @@ auto extractTuple(const std::string_view content, anka::Context &context, TokenF
                   TokenForwardIterator auto tokensEnd, bool isConnected) -> anka::Word;
 auto extractArray(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
                   TokenForwardIterator auto tokensEnd) -> anka::Word;
+auto extractExecutor(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
+                     TokenForwardIterator auto tokensEnd) -> anka::Word;
 
 template <typename T> auto throwNumberTokenError(const std::string_view content, anka::Token token) -> T
 {
@@ -136,6 +138,10 @@ auto extractWords(const std::string_view content, anka::Context &context, TokenF
       ++tokenIter;
       words.emplace_back(extractArray(content, context, tokenIter, tokensEnd));
       break;
+    case TokenType::Executor:
+      ++tokenIter;
+      words.emplace_back(extractExecutor(content, context, tokenIter, tokensEnd));
+      break;
     case TokenType::TupleStart:
       ++tokenIter;
       words.emplace_back(extractTuple(content, context, tokenIter, tokensEnd, isConnected));
@@ -169,6 +175,17 @@ auto extractTuple(const std::string_view content, anka::Context &context, TokenF
                     anka::Tuple{extractWords(content, context, tokenIter, tokensEnd,
                                              {TokenType::SentenceEnd, TokenType::ArrayEnd}, TokenType::TupleEnd),
                                 isConnected});
+}
+
+auto extractExecutor(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
+                     TokenForwardIterator auto tokensEnd) -> anka::Word
+{
+  using namespace anka;
+
+  auto unexpectedTypes = std::vector<TokenType>{TokenType::ArrayStart,   TokenType::ArrayEnd,    TokenType::NumberInt,
+                                                TokenType::NumberDouble, TokenType::SentenceEnd, TokenType::TupleEnd};
+  return createWord(context, anka::Executor{extractWords(content, context, tokenIter, tokensEnd, unexpectedTypes,
+                                                         TokenType::Executor)});
 }
 
 auto extractArray(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
@@ -323,6 +340,12 @@ auto anka::createWord(Context &context, Tuple &&tuple) -> Word
 {
   context.tuples.push_back(std::move(tuple));
   return anka::Word{anka::WordType::Tuple, context.tuples.size() - 1};
+}
+
+auto anka::createWord(Context &context, Executor &&executor) -> Word
+{
+  context.executors.push_back(std::move(executor));
+  return anka::Word{anka::WordType::Executor, context.executors.size() - 1};
 }
 
 auto anka::createWord(Context &context, std::vector<int> &&vec) -> Word

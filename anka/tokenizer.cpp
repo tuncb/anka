@@ -55,6 +55,8 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
   constexpr const char tuple_start_char = '[';
   constexpr const char tuple_end_char = ']';
   constexpr const char placeholder_start_char = '_';
+  constexpr const char executor_start_char = '|';
+  constexpr const char executor_end_char = '|';
 
   auto needSeparator = false;
   auto addConnector = false;
@@ -81,6 +83,16 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
     else if (ch == tuple_end_char)
     {
       tokens.push_back(Token{TokenType::TupleEnd, i, 1});
+      needSeparator = false;
+    }
+    else if (ch == executor_start_char)
+    {
+      tokens.push_back(Token{TokenType::Executor, i, 1});
+      needSeparator = false;
+    }
+    else if (ch == executor_end_char)
+    {
+      tokens.push_back(Token{TokenType::Executor, i, 1});
       needSeparator = false;
     }
     else if (ch == placeholder_start_char)

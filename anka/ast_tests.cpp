@@ -196,4 +196,18 @@ TEST_CASE("names")
            std::vector<Word>{{WordType::Name, 2}, {WordType::IntegerNumber, 0}, {WordType::IntegerArray, 1}});
 }
 
+TEST_CASE("executor")
+{
+  using namespace anka;
+
+  auto ast = toAST("|length add[10 _] _1|");
+  REQUIRE_EQ(ast.sentences.size(), 1);
+  REQUIRE_EQ(ast.context.executors.size(), 1);
+  REQUIRE_EQ(
+      ast.context.executors[0].words,
+      std::vector<Word>{{WordType::Name, 0}, {WordType::Name, 1}, {WordType::Tuple, 0}, {WordType::PlaceHolder, 1}});
+  REQUIRE_EQ(ast.context.tuples.size(), 1);
+  REQUIRE_EQ(ast.context.tuples[0].words, std::vector<Word>{{WordType::IntegerNumber, 0}, {WordType::PlaceHolder, 0}});
+}
+
 #endif

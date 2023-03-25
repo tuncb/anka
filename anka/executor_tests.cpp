@@ -103,4 +103,12 @@ TEST_CASE("connected tuples")
   CHECK_THROWS_AS(executeText("add [10] 20"), const anka::ExecutionError &);
 }
 
+TEST_CASE("executors")
+{
+  CHECK_EQ(executeText("|length length| (1 2 3 4)"), "[4 4]");
+  CHECK_EQ(executeText("add |add[1 _] _1| 30"), "61");
+
+  CHECK_THROWS_AS(executeText("add |add [1] _1| 30"), const anka::ExecutionError &);
+}
+
 #endif

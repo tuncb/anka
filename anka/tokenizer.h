@@ -23,7 +23,8 @@ enum class TokenType
   Name,
   TupleStart,
   TupleEnd,
-  Placeholder
+  Placeholder,
+  Executor,
 };
 
 auto toString(TokenType type) -> std::string;

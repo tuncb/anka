@@ -127,4 +127,11 @@ TEST_CASE("placeholders")
                anka::Token{anka::TokenType::TupleEnd, 12, 1}, anka::Token{anka::TokenType::SentenceEnd, 13, 0}});
 }
 
+TEST_CASE("placeholders")
+{
+  checkTokens("|inc length|", {anka::Token{anka::TokenType::Executor, 0, 1}, anka::Token{anka::TokenType::Name, 1, 3},
+                               anka::Token{anka::TokenType::Name, 5, 6}, anka::Token{anka::TokenType::Executor, 11, 1},
+                               anka::Token{anka::TokenType::SentenceEnd, 12, 0}});
+}
+
 #endif

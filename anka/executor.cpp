@@ -8,6 +8,9 @@
 
 #include "internal_functions.h"
 
+// forward declerations
+auto executeWords(anka::Context &context, const std::vector<anka::Word> &words) -> std::optional<anka::Word>;
+
 auto nameExists(const std::string &name) -> bool
 {
   const auto &internalFunctions = anka::getInternalFunctions();
@@ -246,23 +249,39 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
   return std::nullopt;
 }
 
-auto foldConnectedTuple(anka::Context &context, const std::vector<anka::Word> &tupleWords, const anka::Word &word)
-    -> anka::Word
-{
-  auto words = tupleWords;
-  auto newWords = anka::getAllWords(context, word);
-  words.insert(words.end(), newWords.begin(), newWords.end());
-  return anka::createWord(context, {std::move(words), false});
-}
-
-auto foldUnconnectedTuple(anka::Context &context, const std::vector<anka::Word> &tupleWords, const anka::Word &word)
-    -> anka::Word
+auto foldPlaceholder(anka::Context &context, const anka::Word &placeholder, const anka::Word &rhs) -> anka::Word
 {
   using namespace anka;
-  std::vector<Word> words;
-  auto wordsToBeInserted = anka::getAllWords(context, word);
 
-  for (auto &&w : tupleWords)
+  if (rhs.type == WordType::PlaceHolder)
+    throw anka::ExecutionError{placeholder, rhs, "Cannot fold a placeholder to another."};
+
+  if (rhs.type != WordType::Tuple)
+  {
+    if (placeholder.index == 1)
+      return rhs;
+    throw anka::ExecutionError{placeholder, rhs, std::format("Placeholder _{} is out of range.", placeholder.index)};
+  }
+
+  auto &&tup = getValue<const Tuple &>(context, rhs.index);
+  auto idx = placeholder.index - 1;
+  if (idx >= 0 && idx < tup.words.size())
+  {
+    return tup.words[idx];
+  }
+
+  throw anka::ExecutionError{placeholder, rhs, std::format("Placeholder _{} is out of range.", placeholder.index)};
+}
+
+auto foldtuple(anka::Context &context, const anka::Word &w1, const anka::Word &w2) -> anka::Word
+{
+  auto &&tup = anka::getValue<const anka::Tuple &>(context, w2.index);
+
+  using namespace anka;
+  std::vector<Word> words;
+  auto wordsToBeInserted = anka::getAllWords(context, w1);
+
+  for (auto &&w : tup.words)
   {
     if (w.type == WordType::PlaceHolder)
     {
@@ -274,7 +293,7 @@ auto foldUnconnectedTuple(anka::Context &context, const std::vector<anka::Word> 
       {
         auto idx = w.index - 1;
         if (idx < 0 || idx >= wordsToBeInserted.size())
-          throw anka::ExecutionError{word, std::nullopt, std::format("Placeholder {} is out of range.", w.index)};
+          throw anka::ExecutionError{w1, std::nullopt, std::format("Placeholder {} is out of range.", w.index)};
         words.push_back(wordsToBeInserted[idx]);
       }
     }
@@ -286,11 +305,49 @@ auto foldUnconnectedTuple(anka::Context &context, const std::vector<anka::Word> 
   return anka::createWord(context, {std::move(words), false});
 }
 
-auto foldtuple(anka::Context &context, const anka::Word &w1, const anka::Word &w2) -> anka::Word
+auto createExecutorBlocks(anka::Context &context, const std::vector<anka::Word> &executorWords, const anka::Word &rhs)
+    -> std::vector<std::vector<anka::Word>>
 {
-  auto &&tup = anka::getValue<const anka::Tuple &>(context, w2.index);
-  auto ret = foldUnconnectedTuple(context, tup.words, w1);
-  return ret;
+  using namespace anka;
+
+  std::vector<std::vector<anka::Word>> sentences;
+  for (auto &&lhs : executorWords)
+  {
+    if (lhs.type == WordType::Tuple)
+    {
+      auto &&tup = getValue<const Tuple &>(context, lhs.index);
+      if (tup.isConnected)
+      {
+        sentences.back().push_back(lhs);
+      }
+      else
+      {
+        sentences.push_back({lhs});
+      }
+    }
+    else
+    {
+      sentences.push_back({lhs});
+    }
+  }
+  for (auto &&sentence : sentences)
+  {
+    sentence.push_back(rhs);
+  }
+  return sentences;
+}
+
+auto foldExecutor(anka::Context &context, const anka::Word &w1, const anka::Word &w2) -> anka::Word
+{
+  using namespace anka;
+  auto &&blocks = createExecutorBlocks(context, anka::getValue<const anka::Executor &>(context, w2.index).words, w1);
+
+  std::vector<Word> res;
+  for (auto &&block : blocks)
+  {
+    res.push_back(executeWords(context, block).value());
+  }
+  return createWord(context, Tuple{res, false});
 }
 
 auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) -> anka::Word
@@ -325,28 +382,50 @@ auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) ->
   {
     return foldtuple(context, w1, w2);
   }
+  else if (w2.type == WordType::PlaceHolder)
+  {
+    return foldPlaceholder(context, w2, w1);
+  }
+  else if (w2.type == WordType::Executor)
+  {
+    return foldExecutor(context, w1, w2);
+  }
 
   throw anka::ExecutionError{w1, w2, "Could not fold words."};
 }
 
-auto expandName(anka::Context &context, const anka::Word &word) -> anka::Word
+auto validateValue(anka::Context &context, const anka::Word &word) -> void
 {
+  if (word.type == anka::WordType::PlaceHolder)
+    throw anka::ExecutionError{word, std::nullopt, "Could not find word indicated by the placeholder."};
+
   if (word.type != anka::WordType::Name)
-    return word;
+    return;
 
   const auto &name = context.names[word.index];
   if (!nameExists(name))
   {
     throw anka::ExecutionError{word, std::nullopt, "Could not find word."};
   }
+}
 
-  return word;
+auto executeWords(anka::Context &context, const std::vector<anka::Word> &words) -> std::optional<anka::Word>
+{
+  using namespace ranges;
+  using namespace anka;
+
+  if (words.empty())
+    return std::nullopt;
+
+  const auto &init = words.back();
+  auto rv = words | views::reverse | views::drop(1);
+
+  return std::accumulate(rv.begin(), rv.end(), init,
+                         [&context](const Word &w1, const Word &w2) { return fold(context, w1, w2); });
 }
 
 auto anka::execute(AST &ast) -> std::optional<Word>
 {
-  using namespace ranges;
-
   if (ast.sentences.empty())
     return std::nullopt;
 
@@ -356,14 +435,9 @@ auto anka::execute(AST &ast) -> std::optional<Word>
     if (sentence.words.empty())
       continue;
 
-    const auto &init = sentence.words.back();
-    auto rv = sentence.words | views::reverse | views::drop(1);
-
-    wordOpt = std::accumulate(rv.begin(), rv.end(), init,
-                              [&ast](const Word &w1, const Word &w2) { return fold(ast.context, w1, w2); });
-
+    wordOpt = executeWords(ast.context, sentence.words);
     if (wordOpt.has_value())
-      wordOpt = expandName(ast.context, wordOpt.value());
+      validateValue(ast.context, wordOpt.value());
   }
 
   return wordOpt;
