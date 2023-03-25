@@ -22,6 +22,8 @@ auto extractArray(const std::string_view content, anka::Context &context, TokenF
                   TokenForwardIterator auto tokensEnd) -> anka::Word;
 auto extractExecutor(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
                      TokenForwardIterator auto tokensEnd) -> anka::Word;
+auto extractBlock(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
+                  TokenForwardIterator auto tokensEnd) -> anka::Word;
 
 template <typename T> auto throwNumberTokenError(const std::string_view content, anka::Token token) -> T
 {
@@ -138,6 +140,10 @@ auto extractWords(const std::string_view content, anka::Context &context, TokenF
       ++tokenIter;
       words.emplace_back(extractArray(content, context, tokenIter, tokensEnd));
       break;
+    case TokenType::BlockStart:
+      ++tokenIter;
+      words.emplace_back(extractBlock(content, context, tokenIter, tokensEnd));
+      break;
     case TokenType::Executor:
       ++tokenIter;
       words.emplace_back(extractExecutor(content, context, tokenIter, tokensEnd));
@@ -164,6 +170,18 @@ auto extractSentence(const std::string_view content, anka::Context &context, Tok
   Sentence sentence{extractWords(content, context, tokenIter, tokensEnd, {TokenType::TupleEnd, TokenType::ArrayEnd},
                                  TokenType::SentenceEnd)};
   return sentence;
+}
+
+auto extractBlock(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
+                  TokenForwardIterator auto tokensEnd) -> anka::Word
+{
+  using namespace anka;
+  auto unexpectedTypes = std::vector<TokenType>{
+      TokenType::SentenceEnd,
+  };
+
+  return createWord(context,
+                    Block{extractWords(content, context, tokenIter, tokensEnd, unexpectedTypes, TokenType::BlockEnd)});
 }
 
 auto extractTuple(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
@@ -346,6 +364,12 @@ auto anka::createWord(Context &context, Executor &&executor) -> Word
 {
   context.executors.push_back(std::move(executor));
   return anka::Word{anka::WordType::Executor, context.executors.size() - 1};
+}
+
+auto anka::createWord(Context &context, Block &&block) -> Word
+{
+  context.blocks.push_back(std::move(block));
+  return anka::Word{anka::WordType::Block, context.blocks.size() - 1};
 }
 
 auto anka::createWord(Context &context, std::vector<int> &&vec) -> Word

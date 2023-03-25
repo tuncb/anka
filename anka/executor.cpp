@@ -226,8 +226,8 @@ auto foldSingleArgumentNoRankPolyFunction(anka::Context &context, const anka::Wo
 }
 
 template <typename ReturnType>
-auto foldDouble_Double__RVariations(anka::Context &context, const anka::Word &input,
-                                         const anka::InternalFunction &func) -> std::optional<anka::Word>
+auto foldDouble_Double__RVariations(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
+    -> std::optional<anka::Word>
 {
   typedef ReturnType (*FuncType)(double, double);
 
@@ -399,6 +399,7 @@ auto foldExecutor(anka::Context &context, const anka::Word &w1, const anka::Word
 auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) -> anka::Word
 {
   using namespace anka;
+  // rhs
   if (w1.type == WordType::Name)
   {
     const auto &name = context.names[w1.index];
@@ -408,7 +409,14 @@ auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) ->
     }
     throw anka::ExecutionError{w1, std::nullopt, "Could not find name."};
   }
-
+  else if (w1.type == WordType::Block)
+  {
+    auto &&block = getValue<const Block &>(context, w1.index);
+    auto words = std::vector<Word>{w2};
+    words.insert(words.end(), block.words.begin(), block.words.end());
+    return executeWords(context, words).value();
+  }
+  // lhs
   if (w2.type == WordType::Name)
   {
     const auto &name = context.names[w2.index];
@@ -435,6 +443,13 @@ auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) ->
   else if (w2.type == WordType::Executor)
   {
     return foldExecutor(context, w1, w2);
+  }
+  else if (w2.type == WordType::Block)
+  {
+    auto &&block = getValue<const Block &>(context, w2.index);
+    auto words = block.words;
+    words.push_back(w1);
+    return executeWords(context, words).value();
   }
 
   throw anka::ExecutionError{w1, w2, "Could not fold words."};

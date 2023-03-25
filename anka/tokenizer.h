@@ -16,6 +16,8 @@ enum class TokenType
 {
   ArrayStart,
   ArrayEnd,
+  BlockStart,
+  BlockEnd,
   Connector,
   NumberInt,
   NumberDouble,

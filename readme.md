@@ -11,6 +11,7 @@ anka is an array programming language, heavily inspired by APL, q and haskell.
 * placeholders
 * tuple operations
 * executors
+* single line blocks
 
 ## What you can do now
 ```
@@ -90,3 +91,4 @@ See .\examples\arrayExamples.anka for ideas for the fully functional future vers
 * user defined variables
 * user defined functions
 * import anka files to current context
+* multi-line blocks

@@ -119,4 +119,9 @@ TEST_CASE("double int interchange")
   CHECK_EQ(executeText("equals [1.0 1]"), "true");
   CHECK_EQ(executeText("equals [1.01 1]"), "false");
 }
+
+TEST_CASE("double int interchange")
+{
+  CHECK_EQ(executeText("div | {to_double sum} length | (1 2 3 4 5 6)"), "3.5");
+}
 #endif

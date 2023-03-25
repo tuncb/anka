@@ -26,10 +26,10 @@ enum class WordType
   Boolean,
   BooleanArray,
   Name,
-  Context,
   Tuple,
   PlaceHolder,
-  Executor
+  Executor,
+  Block,
 };
 
 struct Word
@@ -41,6 +41,11 @@ struct Word
 };
 
 struct Sentence
+{
+  std::vector<Word> words;
+};
+
+struct Block
 {
   std::vector<Word> words;
 };
@@ -72,6 +77,7 @@ struct Context
   std::vector<std::string> names;
   std::vector<Tuple> tuples;
   std::vector<Executor> executors;
+  std::vector<Block> blocks;
 };
 
 template <typename T> T getValue(const Context &context, size_t index)
@@ -86,6 +92,8 @@ template <typename T> T getValue(const Context &context, size_t index)
     return context.tuples[index];
   else if constexpr (std::is_same_v<T, const Executor &>)
     return context.executors[index];
+  else if constexpr (std::is_same_v<T, const Block &>)
+    return context.blocks[index];
   else if constexpr (std::is_same_v<T, bool>)
     return context.booleans[index];
   else if constexpr (std::is_same_v<T, const std::vector<bool> &>)
@@ -120,6 +128,7 @@ auto createWord(Context &context, std::vector<bool> &&vec) -> Word;
 auto createWord(Context &context, std::vector<double> &&vec) -> Word;
 auto createWord(Context &context, Tuple &&tuple) -> Word;
 auto createWord(Context &context, Executor &&executor) -> Word;
+auto createWord(Context &context, Block &&block) -> Word;
 
 auto getWord(const Context &context, const Word &input, size_t index) -> std::optional<Word>;
 auto getAllWords(const Context &context, const Word &input) -> std::vector<Word>;

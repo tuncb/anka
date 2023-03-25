@@ -57,6 +57,8 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
   constexpr const char placeholder_start_char = '_';
   constexpr const char executor_start_char = '|';
   constexpr const char executor_end_char = '|';
+  constexpr const char block_start_char = '{';
+  constexpr const char block_end_char = '}';
 
   auto needSeparator = false;
   auto addConnector = false;
@@ -93,6 +95,16 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
     else if (ch == executor_end_char)
     {
       tokens.push_back(Token{TokenType::Executor, i, 1});
+      needSeparator = false;
+    }
+    else if (ch == block_start_char)
+    {
+      tokens.push_back(Token{TokenType::BlockStart, i, 1});
+      needSeparator = false;
+    }
+    else if (ch == block_end_char)
+    {
+      tokens.push_back(Token{TokenType::BlockEnd, i, 1});
       needSeparator = false;
     }
     else if (ch == placeholder_start_char)

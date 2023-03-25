@@ -210,4 +210,16 @@ TEST_CASE("executor")
   REQUIRE_EQ(ast.context.tuples[0].words, std::vector<Word>{{WordType::IntegerNumber, 0}, {WordType::PlaceHolder, 0}});
 }
 
+TEST_CASE("block")
+{
+  using namespace anka;
+
+  auto ast = toAST("{div |{to_double sum} length| (1 2 3 4 5 6)}");
+  REQUIRE_EQ(ast.sentences.size(), 1);
+  REQUIRE_EQ(ast.context.blocks.size(), 2);
+  REQUIRE_EQ(ast.context.blocks[0].words, std::vector<Word>{{WordType::Name, 1}, {WordType::Name, 2}});
+  REQUIRE_EQ(ast.context.blocks[1].words,
+             std::vector<Word>{{WordType::Name, 0}, {WordType::Executor, 0}, {WordType::IntegerArray, 0}});
+}
+
 #endif
