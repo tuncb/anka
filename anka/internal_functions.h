@@ -24,6 +24,7 @@ enum class InternalFunctionType
   Double_Double__Double,
   Double_Double_Bool,
   DoubleArray__Int,
+  DoubleArray__Double,
   DoubleArray__DoubleArray,
 };
 

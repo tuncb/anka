@@ -1,6 +1,7 @@
 #include "internal_functions.h"
 
 #include <algorithm>
+#include <numeric>
 #include <optional>
 
 namespace anka
@@ -95,6 +96,11 @@ template <typename T> auto notEquals(T v1, T v2) -> bool
   return v1 != v2;
 }
 
+template <typename T> auto sum(const std::vector<T> &vec) -> T
+{
+  return std::accumulate(vec.begin(), vec.end(), (T)0);
+}
+
 } // namespace anka
 
 auto anka::getInternalFunctions() -> const std::unordered_map<std::string, std::vector<anka::InternalFunction>> &
@@ -136,6 +142,8 @@ auto anka::getInternalFunctions() -> const std::unordered_map<std::string, std::
                        {&anka::notEquals<double>, InternalFunctionType::Double_Double_Bool},
                        {&anka::notEquals<bool>, InternalFunctionType::Bool_Bool__Bool}};
   map["not"] = {{&anka::notFun, InternalFunctionType::Bool__Bool}};
+  map["sum"] = {{&anka::sum<int>, InternalFunctionType::IntArray__Int},
+                {&anka::sum<double>, InternalFunctionType::DoubleArray__Double}};
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();
@@ -175,6 +183,8 @@ auto anka::toString(InternalFunctionType type) -> std::string
     return "(double) -> int";
   case InternalFunctionType::DoubleArray__DoubleArray:
     return "(double) -> (double)";
+  case InternalFunctionType::DoubleArray__Double:
+    return "(double) -> double";
   }
 
   throw std::runtime_error("Fatal Error: Unexpected internal function type in toString function");
