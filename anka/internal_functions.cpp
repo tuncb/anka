@@ -121,41 +121,6 @@ template <typename T> auto to_double(T val) -> double
   return val;
 }
 
-auto sqrt(double val) -> double
-{
-  return std::sqrt(val);
-}
-
-auto exp(double val) -> double
-{
-  return std::exp(val);
-}
-
-auto log(double val) -> double
-{
-  return std::log(val);
-}
-
-auto log10(double val) -> double
-{
-  return std::log10(val);
-}
-
-auto sin(double val) -> double
-{
-  return std::sin(val);
-}
-
-auto cos(double val) -> double
-{
-  return std::cos(val);
-}
-
-auto tan(double val) -> double
-{
-  return std::tan(val);
-}
-
 } // namespace anka
 
 auto anka::getInternalFunctions() -> const std::unordered_map<std::string, std::vector<anka::InternalFunction>> &
@@ -163,6 +128,8 @@ auto anka::getInternalFunctions() -> const std::unordered_map<std::string, std::
   static std::optional<std::unordered_map<std::string, std::vector<anka::InternalFunction>>> functionMapOpt;
   if (functionMapOpt.has_value())
     return functionMapOpt.value();
+
+  typedef double (*DoubleToDoubleFunc)(double);
 
   std::unordered_map<std::string, std::vector<anka::InternalFunction>> map;
   map["ioata"] = {{&anka::ioata, InternalFunctionType::Int__IntArray}};
@@ -174,13 +141,16 @@ auto anka::getInternalFunctions() -> const std::unordered_map<std::string, std::
                 {&anka::neg<double>, InternalFunctionType::Double__Double}};
   map["abs"] = {{&anka::abs<int>, InternalFunctionType::Int__Int},
                 {&anka::abs<double>, InternalFunctionType::Double__Double}};
-  map["sqrt"] = {{&anka::sqrt, InternalFunctionType::Double__Double}};
-  map["exp"] = {{&anka::exp, InternalFunctionType::Double__Double}};
-  map["log"] = {{&anka::log, InternalFunctionType::Double__Double}};
-  map["log10"] = {{&anka::log10, InternalFunctionType::Double__Double}};
-  map["sin"] = {{&anka::sin, InternalFunctionType::Double__Double}};
-  map["cos"] = {{&anka::cos, InternalFunctionType::Double__Double}};
-  map["tan"] = {{&anka::tan, InternalFunctionType::Double__Double}};
+  map["sqrt"] = {{(DoubleToDoubleFunc)&std::sqrt, InternalFunctionType::Double__Double}};
+  map["exp"] = {{(DoubleToDoubleFunc)&std::exp, InternalFunctionType::Double__Double}};
+  map["log"] = {{(DoubleToDoubleFunc)&std::log, InternalFunctionType::Double__Double}};
+  map["log10"] = {{(DoubleToDoubleFunc)&std::log10, InternalFunctionType::Double__Double}};
+  map["sin"] = {{(DoubleToDoubleFunc)&std::sin, InternalFunctionType::Double__Double}};
+  map["cos"] = {{(DoubleToDoubleFunc)&std::cos, InternalFunctionType::Double__Double}};
+  map["tan"] = {{(DoubleToDoubleFunc)&std::tan, InternalFunctionType::Double__Double}};
+  map["floor"] = {{(DoubleToDoubleFunc)&std::floor, InternalFunctionType::Double__Double}};
+  map["ceil"] = {{(DoubleToDoubleFunc)&std::ceil, InternalFunctionType::Double__Double}};
+  map["trunc"] = {{(DoubleToDoubleFunc)&std::trunc, InternalFunctionType::Double__Double}};
   map["length"] = {{&anka::length<int>, InternalFunctionType::IntArray__Int},
                    {&anka::length<double>, InternalFunctionType::DoubleArray__Int},
                    {&anka::length<bool>, InternalFunctionType::BoolArray__Int}};
