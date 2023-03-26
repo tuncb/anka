@@ -30,6 +30,7 @@ enum class WordType
   PlaceHolder,
   Executor,
   Block,
+  Assignment,
 };
 
 struct Word
@@ -74,10 +75,13 @@ struct Context
   std::vector<std::vector<double>> doubleArrays;
   std::vector<bool> booleans;
   std::vector<std::vector<bool>> booleanArrays;
+  std::unordered_map<std::string, Word> userDefinedNames;
   std::vector<std::string> names;
   std::vector<Tuple> tuples;
   std::vector<Executor> executors;
   std::vector<Block> blocks;
+
+  bool assignNext = false;
 };
 
 template <typename T> T getValue(const Context &context, size_t index)
@@ -110,13 +114,7 @@ template <typename T> T getValue(const Context &context, size_t index)
   ();
 }
 
-struct AST
-{
-  Context context;
-  std::vector<Sentence> sentences;
-};
-
-auto parseAST(const std::string_view content, std::span<Token> tokens, Context &&context) -> AST;
+auto parseAST(const std::string_view content, std::span<Token> tokens, Context &context) -> std::vector<Sentence>;
 
 auto toString(const anka::Context &context, const anka::Word &word) -> std::string;
 
@@ -130,49 +128,6 @@ auto createWord(Context &context, Tuple &&tuple) -> Word;
 auto createWord(Context &context, Executor &&executor) -> Word;
 auto createWord(Context &context, Block &&block) -> Word;
 
-auto getWord(const Context &context, const Word &input, size_t index) -> std::optional<Word>;
-auto getAllWords(const Context &context, const Word &input) -> std::vector<Word>;
 
-template <typename T> WordType getWordType()
-{
-  if constexpr (std::is_same_v<T, int>)
-    return WordType::IntegerNumber;
-  else if constexpr (std::is_same_v<T, double>)
-    return WordType::DoubleNumber;
-  else if constexpr (std::is_same_v<T, std::string>)
-    return WordType::Name;
-  else if constexpr (std::is_same_v<T, const std::vector<int> &>)
-    return WordType::IntegerArray;
-  else if constexpr (std::is_same_v<T, const std::vector<double> &>)
-    return WordType::DoubleArray;
-  else if constexpr (std::is_same_v<T, bool>)
-    return WordType::Boolean;
-  else if constexpr (std::is_same_v<T, const std::vector<bool> &>)
-    return WordType::BooleanArray;
-  else
-    []<bool flag = false>()
-    {
-      static_assert(flag, "No match found in function getWordType().");
-    }
-  ();
-}
-
-template <typename T> tl::optional<T> extractValue(const Context &context, const Word &input, size_t index)
-{
-  if (index > 0 && input.type != WordType::Tuple)
-    return tl::nullopt;
-
-  const auto wOpt = getWord(context, input, index);
-  if (!wOpt)
-    return tl::nullopt;
-
-  auto &&w = wOpt.value();
-  if (w.type != getWordType<T>())
-    return tl::nullopt;
-
-  return getValue<T>(context, w.index);
-}
-
-auto getWordCount(const Context &context, const Word &word) -> size_t;
 
 } // namespace anka

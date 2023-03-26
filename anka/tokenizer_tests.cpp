@@ -141,4 +141,11 @@ TEST_CASE("blocks")
                                anka::Token{anka::TokenType::SentenceEnd, 12, 0}});
 }
 
+TEST_CASE("blocks")
+{
+  checkTokens("test : 44",
+              {anka::Token{anka::TokenType::Name, 0, 4}, anka::Token{anka::TokenType::Assignment, 5, 1},
+               anka::Token{anka::TokenType::NumberInt, 7, 2}, anka::Token{anka::TokenType::SentenceEnd, 9, 0}});
+}
+
 #endif

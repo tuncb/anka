@@ -258,6 +258,7 @@
     <ClInclude Include="ast.h" />
     <ClInclude Include="executor.h" />
     <ClInclude Include="internal_functions.h" />
+    <ClInclude Include="test_utilities.h" />
     <ClInclude Include="tokenizer.h" />
   </ItemGroup>
   <ItemGroup>

@@ -11,6 +11,108 @@
 // forward declerations
 auto executeWords(anka::Context &context, const std::vector<anka::Word> &words) -> std::optional<anka::Word>;
 
+auto getFoldableWord(const anka::Context &context, const anka::Word &word) -> anka::Word
+{
+  using namespace anka;
+
+  if (word.type == WordType::Assignment || word.type == WordType::PlaceHolder)
+    throw anka::ExecutionError{word, std::nullopt, "Could not fold word."};
+
+  if (word.type != WordType::Name)
+    return word;
+
+  const auto &name = context.names[word.index];
+  if (auto iter = context.userDefinedNames.find(name); iter != context.userDefinedNames.end())
+    return iter->second;
+
+  throw anka::ExecutionError{word, std::nullopt, "Could not fold word."};
+}
+
+auto getWord(const anka::Context &context, const anka::Word &input, size_t index) -> std::optional<anka::Word>
+{
+  using namespace anka;
+  auto candidate = input;
+  if (input.type == WordType::Tuple)
+  {
+    const auto &tup = context.tuples[input.index];
+    if (tup.words.size() <= index)
+      return std::nullopt;
+    candidate = tup.words[index];
+  }
+
+  if (candidate.type == WordType::Name)
+  {
+    return getFoldableWord(context, candidate);
+  }
+
+  return candidate;
+}
+
+auto getAllWords(const anka::Context &context, const anka::Word &input) -> std::vector<anka::Word>
+{
+  using namespace anka;
+  if (input.type == WordType::Tuple)
+  {
+    const auto &tup = context.tuples[input.index];
+    return tup.words;
+  }
+
+  return {input};
+}
+
+auto getWordCount(const anka::Context &context, const anka::Word &word) -> size_t
+{
+  using namespace anka;
+  if (word.type != WordType::Tuple)
+  {
+    return 1;
+  }
+
+  return getValue<const Tuple &>(context, word.index).words.size();
+}
+
+template <typename T> anka::WordType getWordType()
+{
+  using namespace anka;
+  if constexpr (std::is_same_v<T, int>)
+    return WordType::IntegerNumber;
+  else if constexpr (std::is_same_v<T, double>)
+    return WordType::DoubleNumber;
+  else if constexpr (std::is_same_v<T, std::string>)
+    return WordType::Name;
+  else if constexpr (std::is_same_v<T, const std::vector<int> &>)
+    return WordType::IntegerArray;
+  else if constexpr (std::is_same_v<T, const std::vector<double> &>)
+    return WordType::DoubleArray;
+  else if constexpr (std::is_same_v<T, bool>)
+    return WordType::Boolean;
+  else if constexpr (std::is_same_v<T, const std::vector<bool> &>)
+    return WordType::BooleanArray;
+  else
+    []<bool flag = false>()
+    {
+      static_assert(flag, "No match found in function getWordType().");
+    }
+  ();
+}
+
+template <typename T> tl::optional<T> extractValue(const anka::Context &context, const anka::Word &input, size_t index)
+{
+  using namespace anka;
+  if (index > 0 && input.type != WordType::Tuple)
+    return tl::nullopt;
+
+  const auto wOpt = getWord(context, input, index);
+  if (!wOpt)
+    return tl::nullopt;
+
+  auto &&w = wOpt.value();
+  if (w.type != getWordType<T>())
+    return tl::nullopt;
+
+  return getValue<T>(context, w.index);
+}
+
 auto nameExists(const std::string &name) -> bool
 {
   const auto &internalFunctions = anka::getInternalFunctions();
@@ -33,7 +135,7 @@ auto checkOverloadCompatibility(const anka::Context &context, anka::InternalFunc
 {
   using namespace anka;
 
-  auto first = anka::getWord(context, word, 0);
+  auto first = getWord(context, word, 0);
   if (!first.has_value())
     return false;
 
@@ -60,7 +162,7 @@ auto checkOverloadCompatibility(const anka::Context &context, anka::InternalFunc
     return first.value().type == WordType::BooleanArray;
   };
 
-  auto second = anka::getWord(context, word, 1);
+  auto second = getWord(context, word, 1);
   if (!second.has_value())
     return false;
 
@@ -105,7 +207,7 @@ template <typename R, typename T1, typename T2, typename FuncType = R (*)(T1, T2
 auto foldTwoArgumentWithRankPolyFunction(anka::Context &context, const anka::Word &input,
                                          const anka::InternalFunction &func) -> std::optional<anka::Word>
 {
-  if (anka::getWordCount(context, input) != 2)
+  if (getWordCount(context, input) != 2)
     return std::nullopt;
 
   auto funcptr = (FuncType)func.ptr;
@@ -177,7 +279,7 @@ template <typename R, typename T>
 auto foldSingleArgumentWithRankPolyFunction(anka::Context &context, const anka::Word &input,
                                             const anka::InternalFunction &func) -> std::optional<anka::Word>
 {
-  if (anka::getWordCount(context, input) != 1)
+  if (getWordCount(context, input) != 1)
     return std::nullopt;
 
   typedef R (*RealFuncType)(T);
@@ -211,7 +313,7 @@ template <typename R, typename T>
 auto foldSingleArgumentNoRankPolyFunction(anka::Context &context, const anka::Word &input,
                                           const anka::InternalFunction &func) -> std::optional<anka::Word>
 {
-  if (anka::getWordCount(context, input) != 1)
+  if (getWordCount(context, input) != 1)
     return std::nullopt;
 
   const auto &valOpt = extractValue<T>(context, input, 0);
@@ -231,11 +333,11 @@ auto foldDouble_Double__RVariations(anka::Context &context, const anka::Word &in
 {
   typedef ReturnType (*FuncType)(double, double);
 
-  if (anka::getWordCount(context, input) != 2)
+  if (getWordCount(context, input) != 2)
     return std::nullopt;
 
-  auto first = anka::getWord(context, input, 0).value();
-  auto second = anka::getWord(context, input, 1).value();
+  auto first = getWord(context, input, 0).value();
+  auto second = getWord(context, input, 1).value();
 
   if (isDoubleType(first) && isDoubleType(second))
     return foldTwoArgumentWithRankPolyFunction<ReturnType, double, double>(context, input, func);
@@ -325,7 +427,7 @@ auto foldtuple(anka::Context &context, const anka::Word &w1, const anka::Word &w
 
   using namespace anka;
   std::vector<Word> words;
-  auto wordsToBeInserted = anka::getAllWords(context, w1);
+  auto wordsToBeInserted = getAllWords(context, w1);
 
   for (auto &&w : tup.words)
   {
@@ -396,78 +498,95 @@ auto foldExecutor(anka::Context &context, const anka::Word &w1, const anka::Word
   return createWord(context, Tuple{res, false});
 }
 
-auto fold(anka::Context &context, const anka::Word &w1, const anka::Word &w2) -> anka::Word
+auto checkIfNameIsAvailable(anka::Context &context, const std::string &name) -> bool
+{
+  if (anka::getInternalFunctions().contains(name))
+    return false;
+  if (context.userDefinedNames.contains(name))
+    return false;
+  return true;
+}
+
+auto fold(anka::Context &context, const anka::Word &lhs, const anka::Word &rhs) -> anka::Word
 {
   using namespace anka;
-  // rhs
-  if (w1.type == WordType::Name)
+  if (context.assignNext)
   {
-    const auto &name = context.names[w1.index];
-    if (nameExists(name))
-    {
-      throw anka::ExecutionError{w1, w2, "Could not fold words."};
-    }
-    throw anka::ExecutionError{w1, std::nullopt, "Could not find name."};
+    context.assignNext = false;
+
+    if (lhs.type != WordType::Name)
+      throw anka::ExecutionError{lhs, rhs, "Could not assign to non-name word."};
+
+    const auto &name = context.names[lhs.index];
+    if (!checkIfNameIsAvailable(context, name))
+      throw anka::ExecutionError{lhs, std::nullopt, "Name already taken."};
+
+    context.userDefinedNames[name] = getFoldableWord(context, rhs);
+    return lhs;
   }
-  else if (w1.type == WordType::Block)
+
+  if (lhs.type == WordType::Assignment)
   {
-    auto &&block = getValue<const Block &>(context, w1.index);
-    auto words = std::vector<Word>{w2};
+    context.assignNext = true;
+    return rhs;
+  }
+
+  if (rhs.type == WordType::Name)
+  {
+    return fold(context, lhs, getFoldableWord(context, rhs));
+  }
+
+  if (lhs.type == WordType::Name)
+  {
+    const auto &name = context.names[lhs.index];
+    if (context.userDefinedNames.contains(name))
+      return fold(context, getFoldableWord(context, lhs), rhs);
+  }
+
+  if (rhs.type == WordType::Block)
+  {
+    auto &&block = getValue<const Block &>(context, rhs.index);
+    auto words = std::vector<Word>{lhs};
     words.insert(words.end(), block.words.begin(), block.words.end());
     return executeWords(context, words).value();
   }
-  // lhs
-  if (w2.type == WordType::Name)
+
+  if (lhs.type == WordType::Name)
   {
-    const auto &name = context.names[w2.index];
-    auto functOpt = findOverload(context, name, w1);
+    const auto &name = context.names[lhs.index];
+    auto functOpt = findOverload(context, name, rhs);
     if (functOpt)
     {
-      auto wordOpt = foldFunction(context, w1, functOpt.value());
+      auto wordOpt = foldFunction(context, rhs, functOpt.value());
       if (!wordOpt)
       {
-        throw anka::ExecutionError{w1, w2, "Could not fold words."};
+        throw anka::ExecutionError{rhs, lhs, "Could not fold words."};
       }
       return wordOpt.value();
     }
-    throw anka::ExecutionError{std::nullopt, w2, "Could not find name."};
+    throw anka::ExecutionError{std::nullopt, lhs, "Could not find name."};
   }
-  else if (w2.type == WordType::Tuple)
+  else if (lhs.type == WordType::Tuple)
   {
-    return foldtuple(context, w1, w2);
+    return foldtuple(context, rhs, lhs);
   }
-  else if (w2.type == WordType::PlaceHolder)
+  else if (lhs.type == WordType::PlaceHolder)
   {
-    return foldPlaceholder(context, w2, w1);
+    return foldPlaceholder(context, lhs, rhs);
   }
-  else if (w2.type == WordType::Executor)
+  else if (lhs.type == WordType::Executor)
   {
-    return foldExecutor(context, w1, w2);
+    return foldExecutor(context, rhs, lhs);
   }
-  else if (w2.type == WordType::Block)
+  else if (lhs.type == WordType::Block)
   {
-    auto &&block = getValue<const Block &>(context, w2.index);
+    auto &&block = getValue<const Block &>(context, lhs.index);
     auto words = block.words;
-    words.push_back(w1);
+    words.push_back(rhs);
     return executeWords(context, words).value();
   }
 
-  throw anka::ExecutionError{w1, w2, "Could not fold words."};
-}
-
-auto validateValue(anka::Context &context, const anka::Word &word) -> void
-{
-  if (word.type == anka::WordType::PlaceHolder)
-    throw anka::ExecutionError{word, std::nullopt, "Could not find word indicated by the placeholder."};
-
-  if (word.type != anka::WordType::Name)
-    return;
-
-  const auto &name = context.names[word.index];
-  if (!nameExists(name))
-  {
-    throw anka::ExecutionError{word, std::nullopt, "Could not find word."};
-  }
+  throw anka::ExecutionError{rhs, lhs, "Could not fold words."};
 }
 
 auto executeWords(anka::Context &context, const std::vector<anka::Word> &words) -> std::optional<anka::Word>
@@ -482,23 +601,23 @@ auto executeWords(anka::Context &context, const std::vector<anka::Word> &words) 
   auto rv = words | views::reverse | views::drop(1);
 
   return std::accumulate(rv.begin(), rv.end(), init,
-                         [&context](const Word &w1, const Word &w2) { return fold(context, w1, w2); });
+                         [&context](const Word &rhs, const Word &lhs) { return fold(context, lhs, rhs); });
 }
 
-auto anka::execute(AST &ast) -> std::optional<Word>
+auto anka::execute(Context &context, const std::vector<Sentence> &sentences) -> std::optional<Word>
 {
-  if (ast.sentences.empty())
+  if (sentences.empty())
     return std::nullopt;
 
   std::optional<Word> wordOpt = std::nullopt;
-  for (const auto &sentence : ast.sentences)
+  for (const auto &sentence : sentences)
   {
     if (sentence.words.empty())
       continue;
 
-    wordOpt = executeWords(ast.context, sentence.words);
+    wordOpt = executeWords(context, sentence.words);
     if (wordOpt.has_value())
-      validateValue(ast.context, wordOpt.value());
+      wordOpt = getFoldableWord(context, wordOpt.value());
   }
 
   return wordOpt;

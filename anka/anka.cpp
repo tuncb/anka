@@ -23,7 +23,7 @@
 #include "tokenizer.h"
 
 const auto constexpr MAJOR_VERSION = "0";
-const auto constexpr MINOR_VERSION = "1";
+const auto constexpr MINOR_VERSION = "2";
 const auto constexpr PATCH_VERSION = "0";
 
 auto readFile(const char *filename) -> std::string
@@ -39,26 +39,25 @@ auto readFile(const char *filename) -> std::string
   return str;
 }
 
-auto execute(anka::Context &&context, const std::string_view content) -> std::optional<anka::Context>
+auto execute(anka::Context &context, const std::string_view content) -> bool
 {
-  anka::AST ast;
   try
   {
     auto tokens = anka::extractTokens(content);
-    ast = anka::parseAST(content, tokens, std::move(context));
-    auto wordOpt = anka::execute(ast);
+    auto sentences = anka::parseAST(content, tokens, context);
+    auto wordOpt = anka::execute(context, sentences);
 
     if (wordOpt.has_value())
     {
-      std::cout << std::format("{}\n", toString(ast.context, wordOpt.value()));
+      std::cout << std::format("{}\n", toString(context, wordOpt.value()));
     }
 
-    return ast.context;
+    return false;
   }
   catch (const anka::TokenizerError &err)
   {
     std::cerr << std::format("Token error at {} character: {}.\n", err.pos, err.ch);
-    return std::nullopt;
+    return false;
   }
   catch (const anka::ASTError &err)
   {
@@ -68,31 +67,34 @@ auto execute(anka::Context &&context, const std::string_view content) -> std::op
       auto t = err.tokenOpt.value();
       std::cerr << std::format("Token start: {}, length: {}.\n", t.start, t.len);
     }
-    return std::nullopt;
+    return false;
   }
   catch (const anka::ExecutionError &err)
   {
     std::cerr << err.msg << "\n";
     if (err.word1.has_value())
     {
-      std::cerr << std::format("word: {}\n", toString(ast.context, err.word1.value()));
+      std::cerr << std::format("word: {}\n", toString(context, err.word1.value()));
     }
     if (err.word2.has_value())
     {
-      std::cerr << std::format("word: {}\n", toString(ast.context, err.word2.value()));
+      std::cerr << std::format("word: {}\n", toString(context, err.word2.value()));
     }
-    return std::nullopt;
+    return false;
   }
+
+  return true;
 }
 
-auto executeRepl(anka::Context &&context) -> void
+auto executeRepl(anka::Context &context) -> void
 {
   using Replxx = replxx::Replxx;
   Replxx rx;
 
   std::cout << "Special functions:\n";
   std::cout << ".exit: Exit REPL.\n";
-  std::cout << ".clear: Clear screen.\n";
+  std::cout << ".cls: Clear screen.\n";
+  std::cout << ".clear: Clear context.\n";
   std::cout << ".internal: List internal commands and constants.\n";
   std::cout << ".history: List command history.\n";
 
@@ -124,9 +126,14 @@ auto executeRepl(anka::Context &&context) -> void
       rx.history_add(input);
       break;
     }
-    else if (input.compare(0, 6, ".clear") == 0)
+    else if (input == ".cls")
     {
       rx.clear_screen();
+      rx.history_add(input);
+    }
+    else if (input == ".clear")
+    {
+      context = anka::Context{};
       rx.history_add(input);
     }
     else if (input.compare(0, 8, ".history") == 0)
@@ -164,11 +171,7 @@ auto executeRepl(anka::Context &&context) -> void
     }
     else
     {
-      auto contextOpt = execute(std::move(context), input);
-      if (contextOpt.has_value())
-      {
-        context = std::move(contextOpt.value());
-      }
+      execute(context, input);
       rx.history_add(input);
     }
   }
@@ -213,17 +216,15 @@ int main(int argc, char *argv[])
 
     auto content = readFile(filename.c_str());
 
-    auto contextOpt = execute(std::move(context), content);
-    if (!contextOpt.has_value())
+    if (!execute(context, content))
     {
       return -1;
     }
-    context = std::move(contextOpt.value());
   }
 
   if (runRepl)
   {
-    executeRepl(std::move(context));
+    executeRepl(context);
   }
 }
 

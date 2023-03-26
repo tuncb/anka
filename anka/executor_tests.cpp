@@ -7,23 +7,24 @@
 #include "ast.h"
 #include "executor.h"
 #include "tokenizer.h"
+#include "test_utilities.h"
 
 TEST_CASE("empty context")
 {
   anka::Context context;
-  anka::AST ast{context, std::vector<anka::Sentence>{}};
-  CHECK_FALSE(anka::execute(ast).has_value());
+  AST ast{context, std::vector<anka::Sentence>{}};
+  CHECK_FALSE(anka::execute(ast.context, ast.sentences).has_value());
 }
 
 auto executeText(const std::string_view content) -> std::string
 {
   anka::Context context;
   auto tokens = anka::extractTokens(content);
-  auto ast = anka::parseAST(content, tokens, std::move(context));
-  auto res = anka::execute(ast);
+  auto sentences = anka::parseAST(content, tokens, context);
+  auto res = anka::execute(context, sentences);
   if (res.has_value())
   {
-    return anka::toString(ast.context, res.value());
+    return anka::toString(context, res.value());
   }
 
   return "";
@@ -118,6 +119,15 @@ TEST_CASE("double int interchange")
   CHECK_EQ(executeText("equals [1 1.0]"), "true");
   CHECK_EQ(executeText("equals [1.0 1]"), "true");
   CHECK_EQ(executeText("equals [1.01 1]"), "false");
+}
+
+TEST_CASE("user defined names")
+{
+  CHECK_EQ(executeText("val: 42"), "42");
+  CHECK_EQ(executeText("avg: {div |{to_double sum} length|}"), "User defined block.");
+  CHECK_EQ(executeText("inc2: {inc inc}\n inc2 5"), "7");
+  CHECK_EQ(executeText("val: 42\n add[val _] 10"), "52");
+  CHECK_EQ(executeText("val: 42\n add[10 _] val"), "52");
 }
 
 TEST_CASE("double int interchange")

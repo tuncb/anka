@@ -65,7 +65,7 @@ auto addNumberWord(const std::string_view content, anka::Context &context, Token
   return createWord(context, value);
 }
 
-auto addPlaceHolderWord(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter)
+auto addPlaceHolderWord(const std::string_view content, TokenForwardIterator auto &tokenIter)
     -> anka::Word
 {
   auto token = *(tokenIter++);
@@ -127,7 +127,7 @@ auto extractWords(const std::string_view content, anka::Context &context, TokenF
       words.emplace_back(addNumberWord<double>(content, context, tokenIter));
       break;
     case TokenType::Placeholder:
-      words.emplace_back(addPlaceHolderWord(content, context, tokenIter));
+      words.emplace_back(addPlaceHolderWord(content, tokenIter));
       break;
     case TokenType::Name:
       words.emplace_back(addNameWord(content, context, tokenIter));
@@ -135,6 +135,10 @@ auto extractWords(const std::string_view content, anka::Context &context, TokenF
     case TokenType::Connector:
       isConnected = true;
       tokenIter++;
+      break;
+    case TokenType::Assignment:
+      words.emplace_back(Word{WordType::Assignment, 0});
+      ++tokenIter;
       break;
     case TokenType::ArrayStart:
       ++tokenIter;
@@ -252,7 +256,7 @@ auto extractArray(const std::string_view content, anka::Context &context, TokenF
   throw ASTError{startToken, "Fatal Error: Could not extract array"};
 };
 
-auto anka::parseAST(const std::string_view content, std::span<Token> tokens, Context &&context) -> AST
+auto anka::parseAST(const std::string_view content, std::span<Token> tokens, Context &context) -> std::vector<Sentence>
 {
   std::vector<Sentence> sentences;
   for (auto tokenIter = tokens.begin(); tokenIter != tokens.end();)
@@ -260,7 +264,7 @@ auto anka::parseAST(const std::string_view content, std::span<Token> tokens, Con
     sentences.emplace_back(extractSentence(content, context, tokenIter, tokens.end()));
   }
 
-  return {std::move(context), sentences};
+  return sentences;
 }
 
 auto formatDouble(double value) -> std::string
@@ -272,7 +276,9 @@ auto formatDouble(double value) -> std::string
 
   str.erase(str.find_last_not_of('0') + 2, std::string::npos);
 
-  if (str.length() > 3 && str.back() == '0')
+  auto dotPos = str.find_first_of('.');
+
+  if (str.length() - dotPos > 2 && str.back() == '0')
     str.pop_back();
 
   return str;
@@ -299,6 +305,8 @@ auto anka::toString(const anka::Context &context, const anka::Word &word) -> std
   }
   case WordType::Boolean:
     return std::format("{}", context.booleans[word.index]);
+  case WordType::Block:
+    return "User defined block.";
   case WordType::BooleanArray: {
     auto &v = context.booleanArrays[word.index];
     return fmt::format("({})", fmt::join(v, " "));
@@ -388,38 +396,4 @@ auto anka::createWord(Context &context, std::vector<double> &&vec) -> Word
 {
   context.doubleArrays.push_back(std::move(vec));
   return anka::Word{anka::WordType::DoubleArray, context.doubleArrays.size() - 1};
-}
-
-auto anka::getWord(const Context &context, const Word &input, size_t index) -> std::optional<Word>
-{
-  if (input.type == WordType::Tuple)
-  {
-    const auto &tup = context.tuples[input.index];
-    if (tup.words.size() <= index)
-      return std::nullopt;
-    return tup.words[index];
-  }
-
-  return input;
-}
-
-auto anka::getAllWords(const Context &context, const Word &input) -> std::vector<Word>
-{
-  if (input.type == WordType::Tuple)
-  {
-    const auto &tup = context.tuples[input.index];
-    return tup.words;
-  }
-
-  return {input};
-}
-
-auto anka::getWordCount(const Context &context, const Word &word) -> size_t
-{
-  if (word.type != WordType::Tuple)
-  {
-    return 1;
-  }
-
-  return getValue<const Tuple &>(context, word.index).words.size();
 }

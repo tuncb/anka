@@ -59,6 +59,7 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
   constexpr const char executor_end_char = '|';
   constexpr const char block_start_char = '{';
   constexpr const char block_end_char = '}';
+  constexpr const char assignment_char = ':';
 
   auto needSeparator = false;
   auto addConnector = false;
@@ -111,6 +112,11 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
     {
       auto len = parseContinuously(isDigit, content, i + 1);
       tokens.push_back({TokenType::Placeholder, i, len + 1});
+    }
+    else if (ch == assignment_char)
+    {
+      tokens.push_back(Token{TokenType::Assignment, i, 1});
+      needSeparator = false;
     }
     else if (isNumber(ch))
     {
@@ -192,6 +198,14 @@ auto anka::toString(TokenType type) -> std::string
     return "sentence end";
   case TokenType::Placeholder:
     return "placeholder";
+  case TokenType::Executor:
+    return "executor '|'";
+  case TokenType::BlockStart:
+    return "block start '{'";
+  case TokenType::BlockEnd:
+    return "block end '}'";
+  case TokenType::Assignment:
+    return "assignment ':'";
   default:
     throw(std::runtime_error("Fatal error: Unexpected token type"));
   }

@@ -15,5 +15,5 @@ struct ExecutionError
   std::string msg;
 };
 
-auto execute(AST &ast) -> std::optional<Word>;
+auto execute(Context &context, const std::vector<Sentence> &sentences) -> std::optional<Word>;
 } // namespace anka

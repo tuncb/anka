@@ -56,6 +56,9 @@
     <ClInclude Include="internal_functions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="test_utilities.h">
+      <Filter>tests</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="vcpkg.json" />

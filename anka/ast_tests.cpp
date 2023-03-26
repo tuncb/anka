@@ -3,13 +3,15 @@
 #include <doctest/doctest.h>
 
 #include "ast.h"
+#include "test_utilities.h"
 #include "tokenizer.h"
 
-auto toAST(std::string_view content) -> anka::AST
+auto toAST(std::string_view content) -> AST
 {
   anka::Context context;
   auto tokens = anka::extractTokens(content);
-  return anka::parseAST(content, tokens, std::move(context));
+  auto sentences = anka::parseAST(content, tokens, context);
+  return {context, sentences};
 }
 
 TEST_CASE("empty content")
@@ -208,6 +210,17 @@ TEST_CASE("executor")
       std::vector<Word>{{WordType::Name, 0}, {WordType::Name, 1}, {WordType::Tuple, 0}, {WordType::PlaceHolder, 1}});
   REQUIRE_EQ(ast.context.tuples.size(), 1);
   REQUIRE_EQ(ast.context.tuples[0].words, std::vector<Word>{{WordType::IntegerNumber, 0}, {WordType::PlaceHolder, 0}});
+}
+
+TEST_CASE("assignment")
+{
+  using namespace anka;
+
+  auto ast = toAST("inc2: {inc inc}");
+  REQUIRE_EQ(ast.sentences.size(), 1);
+  REQUIRE_EQ(ast.context.blocks.size(), 1);
+  REQUIRE_EQ(ast.sentences[0].words,
+             std::vector<Word>{{WordType::Name, 0}, {WordType::Assignment, 0}, {WordType::Block, 0}});
 }
 
 TEST_CASE("block")
