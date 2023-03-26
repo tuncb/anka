@@ -149,7 +149,7 @@ auto checkOverloadCompatibility(const anka::Context &context, anka::InternalFunc
   case InternalFunctionType::IntArray__IntArray:
     return first.value().type == WordType::IntegerArray;
   case InternalFunctionType::Double__Double:
-    return first.value().type == WordType::DoubleNumber || first.value().type == WordType::DoubleArray;
+    return (isDoubleType(first.value()) || isIntegerType(first.value()));
   case InternalFunctionType::DoubleArray__Int:
   case InternalFunctionType::DoubleArray__Double:
   case InternalFunctionType::DoubleArray__DoubleArray:
@@ -275,15 +275,14 @@ auto foldTwoArgumentWithRankPolyFunction(anka::Context &context, const anka::Wor
   return std::nullopt;
 }
 
-template <typename R, typename T>
+template <typename R, typename T, typename FuncType = R (*)(T)>
 auto foldSingleArgumentWithRankPolyFunction(anka::Context &context, const anka::Word &input,
                                             const anka::InternalFunction &func) -> std::optional<anka::Word>
 {
   if (getWordCount(context, input) != 1)
     return std::nullopt;
 
-  typedef R (*RealFuncType)(T);
-  auto funcptr = (RealFuncType)func.ptr;
+  auto funcptr = (FuncType)func.ptr;
 
   auto opt1 = extractValue<T>(context, input, 0);
 
@@ -351,6 +350,24 @@ auto foldDouble_Double__RVariations(anka::Context &context, const anka::Word &in
   return std::nullopt;
 }
 
+auto foldDouble__DoubleVariations(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
+    -> std::optional<anka::Word>
+{
+  if (getWordCount(context, input) != 1)
+    return std::nullopt;
+
+  typedef double (*FuncType)(double);
+  auto first = getWord(context, input, 0).value();
+
+  if (isDoubleType(first))
+    return foldSingleArgumentWithRankPolyFunction<double, double>(context, input, func);
+
+  if (isIntegerType(first))
+    return foldSingleArgumentWithRankPolyFunction<double, int, FuncType>(context, input, func);
+
+  return std::nullopt;
+}
+
 auto foldFunction(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
     -> std::optional<anka::Word>
 {
@@ -382,7 +399,7 @@ auto foldFunction(anka::Context &context, const anka::Word &input, const anka::I
   case InternalFunctionType::BoolArray__BoolArray:
     return foldSingleArgumentNoRankPolyFunction<std::vector<bool>, const std::vector<bool> &>(context, input, func);
   case InternalFunctionType::Double__Double:
-    return foldSingleArgumentWithRankPolyFunction<double, double>(context, input, func);
+    return foldDouble__DoubleVariations(context, input, func);
   case InternalFunctionType::Double_Double__Double:
     return foldDouble_Double__RVariations<double>(context, input, func);
   case InternalFunctionType::Double_Double_Bool:
