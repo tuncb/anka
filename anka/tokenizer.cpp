@@ -38,12 +38,12 @@ auto parseContinuously(Predicate predicate, const std::string_view content, size
   return std::distance(b, next);
 }
 
-auto parseUntil(const std::string_view content, size_t start, const char *ch) -> std::optional<size_t>
+template <typename Predicate> auto parseUntil(Predicate predicate, const std::string_view content, size_t pos) -> size_t
 {
-  auto pos = content.find_first_of(ch, start);
-  if (pos == std::string_view::npos)
-    return std::nullopt;
-  return pos - start;
+  const auto b = content.begin() + pos;
+  const auto e = content.end();
+  auto next = std::ranges::find_if(b, e, predicate);
+  return std::distance(b, next);
 }
 
 auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
@@ -60,6 +60,7 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
   constexpr const char block_start_char = '{';
   constexpr const char block_end_char = '}';
   constexpr const char assignment_char = ':';
+  constexpr const char comment_char = '#';
 
   auto needSeparator = false;
   auto addConnector = false;
@@ -107,6 +108,13 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
     {
       tokens.push_back(Token{TokenType::BlockEnd, i, 1});
       needSeparator = false;
+    }
+    else if (ch == comment_char)
+    {
+      auto len = parseUntil(isEndLine, content, i);
+      if (len == std::string_view::npos)
+        return tokens;
+      i += len - 1;
     }
     else if (ch == placeholder_start_char)
     {
