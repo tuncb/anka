@@ -55,8 +55,7 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
   constexpr const char tuple_start_char = '[';
   constexpr const char tuple_end_char = ']';
   constexpr const char placeholder_start_char = '_';
-  constexpr const char executor_start_char = '|';
-  constexpr const char executor_end_char = '|';
+  constexpr const char executor_char = '|';
   constexpr const char block_start_char = '{';
   constexpr const char block_end_char = '}';
   constexpr const char assignment_char = ':';
@@ -65,48 +64,22 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
   auto needSeparator = false;
   auto addConnector = false;
 
+  auto singleCharTokens = std::vector<std::pair<const char, TokenType>>{
+      {array_start_char, TokenType::ArrayStart}, {array_end_char, TokenType::ArrayEnd},
+      {tuple_start_char, TokenType::TupleStart}, {tuple_end_char, TokenType::TupleEnd},
+      {executor_char, TokenType::Executor},      {block_start_char, TokenType::BlockStart},
+      {block_end_char, TokenType::BlockEnd},     {assignment_char, TokenType::Assignment},
+  };
+
   size_t i = 0;
   while (i < content.size())
   {
     const auto ch = content[i];
-    if (ch == array_start_char)
+
+    if (auto iter = std::ranges::find(singleCharTokens, ch, &std::pair<const char, TokenType>::first);
+        iter != singleCharTokens.end())
     {
-      tokens.push_back(Token{TokenType::ArrayStart, i, 1});
-      needSeparator = false;
-    }
-    else if (ch == array_end_char)
-    {
-      tokens.push_back(Token{TokenType::ArrayEnd, i, 1});
-      needSeparator = false;
-    }
-    else if (ch == tuple_start_char)
-    {
-      tokens.push_back(Token{TokenType::TupleStart, i, 1});
-      needSeparator = false;
-    }
-    else if (ch == tuple_end_char)
-    {
-      tokens.push_back(Token{TokenType::TupleEnd, i, 1});
-      needSeparator = false;
-    }
-    else if (ch == executor_start_char)
-    {
-      tokens.push_back(Token{TokenType::Executor, i, 1});
-      needSeparator = false;
-    }
-    else if (ch == executor_end_char)
-    {
-      tokens.push_back(Token{TokenType::Executor, i, 1});
-      needSeparator = false;
-    }
-    else if (ch == block_start_char)
-    {
-      tokens.push_back(Token{TokenType::BlockStart, i, 1});
-      needSeparator = false;
-    }
-    else if (ch == block_end_char)
-    {
-      tokens.push_back(Token{TokenType::BlockEnd, i, 1});
+      tokens.push_back(Token{iter->second, i, 1});
       needSeparator = false;
     }
     else if (ch == comment_char)
@@ -120,11 +93,6 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
     {
       auto len = parseContinuously(isDigit, content, i + 1);
       tokens.push_back({TokenType::Placeholder, i, len + 1});
-    }
-    else if (ch == assignment_char)
-    {
-      tokens.push_back(Token{TokenType::Assignment, i, 1});
-      needSeparator = false;
     }
     else if (isNumber(ch))
     {
