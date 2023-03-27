@@ -1,6 +1,57 @@
-# anka
+# Anka
 
-anka is an array programming language, heavily inspired by APL, q and haskell.
+"Anka is an array programming language, heavily inspired by APL, q and haskell.
+The main goal is to learn and experiment on language design, interpreters and generally array languages.
+
+## Build
+
+Requirements:
+
+	* Visual studio 2022
+	* vcpkg
+
+Use .\anka\anka.sln to build the project
+
+## Use
+
+REPL: anka.exe -r
+
+file: anka.exe -f ./example.anka
+
+## Examples
+
+Rank polymorphism
+
+```
+add[1 2]
+>>3
+add[(1 2 3) (1 2 3)]
+>>(2 4 6)
+add[10 (1 2 3)]
+>>(11 12 13)
+```
+
+Function composition
+
+```
+sum mul[_1 _1] ioata inc 4
+>> 55
+```
+
+Trains
+
+```
+mul |inc dec| 5
+>> 24
+```
+
+Point free programming
+
+```
+avg: {div |sum length|}
+avg (1.1 2.2 3.3)
+>> 2.2
+```
 
 ## Current features
 * Interpreter that can load a file.
