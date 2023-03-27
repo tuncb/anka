@@ -1,6 +1,6 @@
 # Anka
 
-"Anka is an array programming language, heavily inspired by APL, q and haskell.
+Anka is an array programming language, heavily inspired by APL, q and haskell.
 The main goal is to learn and experiment on language design, interpreters and generally array languages.
 
 ## Build
