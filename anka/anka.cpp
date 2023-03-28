@@ -197,6 +197,7 @@ int main(int argc, char *argv[])
     return -1;
 
   anka::Context context;
+  anka::injectInternalConstants(context);
 
   std::cout << appDesc << "\n";
 

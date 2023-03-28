@@ -128,6 +128,6 @@ auto createWord(Context &context, Tuple &&tuple) -> Word;
 auto createWord(Context &context, Executor &&executor) -> Word;
 auto createWord(Context &context, Block &&block) -> Word;
 
-
+auto injectInternalConstants(Context &context) -> void;
 
 } // namespace anka

@@ -1,6 +1,7 @@
 #include "internal_functions.h"
 
 #include <algorithm>
+#include <numbers>
 #include <numeric>
 #include <optional>
 
@@ -184,6 +185,20 @@ auto anka::getInternalFunctions() -> const std::unordered_map<std::string, std::
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();
+}
+
+auto anka::getInternalDoubleConstants() -> const std::unordered_map<std::string, double> &
+{
+  static std::optional<std::unordered_map<std::string, double>> mapOpt;
+  if (mapOpt.has_value())
+    return mapOpt.value();
+
+  std::unordered_map<std::string, double> map;
+  map["pi"] = std::numbers::pi;
+  map["e"] = std::numbers::e;
+
+  mapOpt = std::move(map);
+  return mapOpt.value();
 }
 
 auto anka::toString(InternalFunctionType type) -> std::string

@@ -40,4 +40,20 @@ struct InternalFunction
 
 auto getInternalFunctions() -> const std::unordered_map<std::string, std::vector<anka::InternalFunction>> &;
 
+auto getInternalDoubleConstants() -> const std::unordered_map<std::string, double> &;
+
+template <typename T> auto getInternalConstants() -> const std::unordered_map<std::string, T> &
+{
+  if constexpr (std::is_same_v<T, double>)
+  {
+    return getInternalDoubleConstants();
+  }
+  else
+    []<bool flag = false>()
+    {
+      static_assert(flag, "No match found in function getInternalConstants().");
+    }
+  ();
+}
+
 } // namespace anka

@@ -65,8 +65,7 @@ auto addNumberWord(const std::string_view content, anka::Context &context, Token
   return createWord(context, value);
 }
 
-auto addPlaceHolderWord(const std::string_view content, TokenForwardIterator auto &tokenIter)
-    -> anka::Word
+auto addPlaceHolderWord(const std::string_view content, TokenForwardIterator auto &tokenIter) -> anka::Word
 {
   auto token = *(tokenIter++);
   auto indexOpt = token.len == 1 ? 0 : toNumber<size_t>(content, token.start + 1, token.len - 1);
@@ -378,6 +377,20 @@ auto anka::createWord(Context &context, Block &&block) -> Word
 {
   context.blocks.push_back(std::move(block));
   return anka::Word{anka::WordType::Block, context.blocks.size() - 1};
+}
+
+template <typename T> auto injectInternalConstants(anka::Context &context) -> void
+{
+  auto &&map = anka::getInternalConstants<T>();
+  for (auto &&pair : map)
+  {
+    context.userDefinedNames[pair.first] = createWord(context, pair.second);
+  }
+}
+
+auto anka::injectInternalConstants(Context &context) -> void
+{
+  ::injectInternalConstants<double>(context);
 }
 
 auto anka::createWord(Context &context, std::vector<int> &&vec) -> Word
