@@ -42,6 +42,9 @@
     <ClCompile Include="ast_tests.cpp">
       <Filter>tests</Filter>
     </ClCompile>
+    <ClCompile Include="utility.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tokenizer.h">

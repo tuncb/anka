@@ -7,9 +7,7 @@
 
 #include <filesystem>
 #include <format>
-#include <fstream>
-#include <iostream>
-#include <streambuf>
+
 #include <string>
 
 #include <argumentum/argparse.h>
@@ -22,22 +20,11 @@
 #include "internal_functions.h"
 #include "tokenizer.h"
 
+import utility;
+
 const auto constexpr MAJOR_VERSION = "0";
 const auto constexpr MINOR_VERSION = "2";
 const auto constexpr PATCH_VERSION = "0";
-
-auto readFile(const char *filename) -> std::string
-{
-  std::ifstream t(filename);
-  std::string str;
-
-  t.seekg(0, std::ios::end);
-  str.reserve(t.tellg());
-  t.seekg(0, std::ios::beg);
-
-  str.assign((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-  return str;
-}
 
 auto execute(anka::Context &context, const std::string_view content) -> bool
 {
@@ -215,7 +202,7 @@ int main(int argc, char *argv[])
       throw std::runtime_error("File does not exist.");
     }
 
-    auto content = readFile(filename.c_str());
+    auto content = anka::utility::readFile(filename.c_str());
 
     if (!execute(context, content))
     {
