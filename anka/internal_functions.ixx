@@ -1,12 +1,123 @@
-#include "internal_functions.h"
-
+module;
 #include <algorithm>
 #include <numbers>
 #include <numeric>
 #include <optional>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+export module anka:internal_functions;
+
+// Ensure switches cover all enumeration cases
+#pragma warning(push)
+#pragma warning(default : 4062)
+#pragma warning(error : 4062)
 
 namespace anka
 {
+
+export enum class InternalFunctionType
+{
+  Int__IntArray,
+  Int__Int,
+  Int_Int__Int,
+  Int_Int_Bool,
+  Int__Double,
+  IntArray__Int,
+  IntArray__IntArray,
+  Bool__Bool,
+  Bool_Bool__Bool,
+  BoolArray__Int,
+  BoolArray__BoolArray,
+  BoolArray__Bool,
+  Double__Double,
+  Double_Double__Double,
+  Double_Double_Bool,
+  DoubleArray__Int,
+  DoubleArray__Double,
+  DoubleArray__DoubleArray,
+};
+
+export auto toString(InternalFunctionType type) -> std::string
+{
+  switch (type)
+  {
+  case InternalFunctionType::Int__IntArray:
+    return "int -> (int)";
+  case InternalFunctionType::Int__Int:
+    return "int -> int";
+  case InternalFunctionType::Int__Double:
+    return "int -> double";
+  case InternalFunctionType::Int_Int__Int:
+    return "[int int] -> int";
+  case InternalFunctionType::Int_Int_Bool:
+    return "[int int] -> bool";
+  case InternalFunctionType::IntArray__Int:
+    return "(int) -> int";
+  case InternalFunctionType::IntArray__IntArray:
+    return "(int) -> (int)";
+  case InternalFunctionType::Bool__Bool:
+    return "bool -> bool";
+  case InternalFunctionType::Bool_Bool__Bool:
+    return "[bool bool] -> bool";
+  case InternalFunctionType::BoolArray__Int:
+    return "(bool) -> int";
+  case InternalFunctionType::BoolArray__Bool:
+    return "(bool) -> bool";
+  case InternalFunctionType::BoolArray__BoolArray:
+    return "(bool) -> (bool)";
+  case InternalFunctionType::Double__Double:
+    return "double -> double";
+  case InternalFunctionType::Double_Double__Double:
+    return "[double double] -> double";
+  case InternalFunctionType::Double_Double_Bool:
+    return "[double double] -> bool";
+  case InternalFunctionType::DoubleArray__Int:
+    return "(double) -> int";
+  case InternalFunctionType::DoubleArray__DoubleArray:
+    return "(double) -> (double)";
+  case InternalFunctionType::DoubleArray__Double:
+    return "(double) -> double";
+  }
+
+  throw std::runtime_error("Fatal Error: Unexpected internal function type in toString function");
+}
+
+export auto nrArguments(InternalFunctionType type) -> int
+{
+  switch (type)
+  {
+  case InternalFunctionType::Int__IntArray:
+  case InternalFunctionType::Int__Int:
+  case InternalFunctionType::Int__Double:
+  case InternalFunctionType::IntArray__Int:
+  case InternalFunctionType::IntArray__IntArray:
+  case InternalFunctionType::Bool__Bool:
+  case InternalFunctionType::Double__Double:
+  case InternalFunctionType::BoolArray__Int:
+  case InternalFunctionType::BoolArray__Bool:
+  case InternalFunctionType::BoolArray__BoolArray:
+  case InternalFunctionType::DoubleArray__Int:
+  case InternalFunctionType::DoubleArray__DoubleArray:
+  case InternalFunctionType::DoubleArray__Double:
+    return 1;
+    break;
+  case InternalFunctionType::Int_Int__Int:
+  case InternalFunctionType::Int_Int_Bool:
+  case InternalFunctionType::Bool_Bool__Bool:
+  case InternalFunctionType::Double_Double__Double:
+  case InternalFunctionType::Double_Double_Bool:
+    return 2;
+  }
+
+  throw std::runtime_error("Fatal Error: Unexpected internal function type in nrArguments function");
+}
+
+export struct InternalFunction
+{
+  void *ptr = nullptr;
+  InternalFunctionType type;
+};
 
 auto ioata(int n) -> std::vector<int>
 {
@@ -122,9 +233,7 @@ template <typename T> auto to_double(T val) -> double
   return val;
 }
 
-} // namespace anka
-
-auto anka::getInternalFunctions() -> const std::unordered_map<std::string, std::vector<anka::InternalFunction>> &
+export auto getInternalFunctions() -> const std::unordered_map<std::string, std::vector<anka::InternalFunction>> &
 {
   static std::optional<std::unordered_map<std::string, std::vector<anka::InternalFunction>>> functionMapOpt;
   if (functionMapOpt.has_value())
@@ -187,7 +296,9 @@ auto anka::getInternalFunctions() -> const std::unordered_map<std::string, std::
   return functionMapOpt.value();
 }
 
-auto anka::getInternalDoubleConstants() -> const std::unordered_map<std::string, double> &
+// Internal constants
+
+auto getInternalDoubleConstants() -> const std::unordered_map<std::string, double> &
 {
   static std::optional<std::unordered_map<std::string, double>> mapOpt;
   if (mapOpt.has_value())
@@ -201,47 +312,20 @@ auto anka::getInternalDoubleConstants() -> const std::unordered_map<std::string,
   return mapOpt.value();
 }
 
-auto anka::toString(InternalFunctionType type) -> std::string
+export template <typename T> auto getInternalConstants() -> const std::unordered_map<std::string, T> &
 {
-  switch (type)
+  if constexpr (std::is_same_v<T, double>)
   {
-  case InternalFunctionType::Int__IntArray:
-    return "int -> (int)";
-  case InternalFunctionType::Int__Int:
-    return "int -> int";
-  case InternalFunctionType::Int__Double:
-    return "int -> double";
-  case InternalFunctionType::Int_Int__Int:
-    return "[int int] -> int";
-  case InternalFunctionType::Int_Int_Bool:
-    return "[int int] -> bool";
-  case InternalFunctionType::IntArray__Int:
-    return "(int) -> int";
-  case InternalFunctionType::IntArray__IntArray:
-    return "(int) -> (int)";
-  case InternalFunctionType::Bool__Bool:
-    return "bool -> bool";
-  case InternalFunctionType::Bool_Bool__Bool:
-    return "[bool bool] -> bool";
-  case InternalFunctionType::BoolArray__Int:
-    return "(bool) -> int";
-  case InternalFunctionType::BoolArray__Bool:
-    return "(bool) -> bool";
-  case InternalFunctionType::BoolArray__BoolArray:
-    return "(bool) -> (bool)";
-  case InternalFunctionType::Double__Double:
-    return "double -> double";
-  case InternalFunctionType::Double_Double__Double:
-    return "[double double] -> double";
-  case InternalFunctionType::Double_Double_Bool:
-    return "[double double] -> bool";
-  case InternalFunctionType::DoubleArray__Int:
-    return "(double) -> int";
-  case InternalFunctionType::DoubleArray__DoubleArray:
-    return "(double) -> (double)";
-  case InternalFunctionType::DoubleArray__Double:
-    return "(double) -> double";
+    return getInternalDoubleConstants();
   }
-
-  throw std::runtime_error("Fatal Error: Unexpected internal function type in toString function");
+  else
+    []<bool flag = false>()
+    {
+      static_assert(flag, "No match found in function getInternalConstants().");
+    }
+  ();
 }
+
+} // namespace anka
+
+#pragma warning(pop)

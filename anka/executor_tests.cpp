@@ -99,8 +99,10 @@ TEST_CASE("mismatch errors")
 TEST_CASE("connected tuples")
 {
   CHECK_EQ(executeText("add[10 _] 20"), "30");
+  CHECK_EQ(executeText("add[10] 20"), "30");
   CHECK_EQ(executeText("add [10 _1] [20]"), "30");
   CHECK_EQ(executeText("add [_] [10 20]"), "30");
+  CHECK_EQ(executeText("add[] [10 20]"), "30");
   CHECK_THROWS_AS(executeText("add [10] 20"), const anka::ExecutionError &);
 }
 

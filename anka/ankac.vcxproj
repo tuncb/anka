@@ -246,11 +246,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="anka.cpp" />
+    <ClCompile Include="anka.ixx" />
     <ClCompile Include="ast.cpp" />
     <ClCompile Include="ast_tests.cpp" />
     <ClCompile Include="executor.cpp" />
     <ClCompile Include="executor_tests.cpp" />
-    <ClCompile Include="internal_functions.cpp" />
+    <ClCompile Include="internal_functions.ixx" />
     <ClCompile Include="tokenizer.cpp" />
     <ClCompile Include="tokenizer_tests.cpp" />
     <ClCompile Include="utility.ixx" />
@@ -258,7 +259,6 @@
   <ItemGroup>
     <ClInclude Include="ast.h" />
     <ClInclude Include="executor.h" />
-    <ClInclude Include="internal_functions.h" />
     <ClInclude Include="test_utilities.h" />
     <ClInclude Include="tokenizer.h" />
   </ItemGroup>

@@ -6,7 +6,7 @@
 #include <range/v3/view/drop.hpp>
 #include <range/v3/view/reverse.hpp>
 
-#include "internal_functions.h"
+import anka;
 
 // forward declerations
 auto executeWords(anka::Context &context, const std::vector<anka::Word> &words) -> std::optional<anka::Word>;
@@ -467,6 +467,27 @@ auto foldtuple(anka::Context &context, const anka::Word &w1, const anka::Word &w
       words.push_back(w);
     }
   }
+
+  if (tup.connectedNameIndexOpt)
+  {
+    const auto &connectedName = anka::getValue<std::string>(context, tup.connectedNameIndexOpt.value());
+    auto &&internal_functions = anka::getInternalFunctions();
+    if (auto iter = internal_functions.find(connectedName); iter != internal_functions.end())
+    {
+      auto maxArgumentFuncIter =
+          std::max_element(iter->second.begin(), iter->second.end(),
+                           [](const anka::InternalFunction &f1, const anka::InternalFunction &f2) {
+                             return anka::nrArguments(f1.type) < anka::nrArguments(f2.type);
+                           });
+      int nrWordsToInsert = std::min(anka::nrArguments(maxArgumentFuncIter->type) - static_cast<int>(tup.words.size()),
+                                     static_cast<int>(wordsToBeInserted.size()));
+      if (nrWordsToInsert > 0)
+      {
+        words.insert(words.end(), wordsToBeInserted.begin(), wordsToBeInserted.begin() + nrWordsToInsert);
+      }
+    }
+  }
+
   return anka::createWord(context, {std::move(words), false});
 }
 
@@ -481,7 +502,7 @@ auto createExecutorBlocks(anka::Context &context, const std::vector<anka::Word> 
     if (lhs.type == WordType::Tuple)
     {
       auto &&tup = getValue<const Tuple &>(context, lhs.index);
-      if (tup.isConnected)
+      if (tup.connectedNameIndexOpt)
       {
         sentences.back().push_back(lhs);
       }

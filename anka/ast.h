@@ -54,7 +54,7 @@ struct Block
 struct Tuple
 {
   std::vector<Word> words;
-  bool isConnected;
+  std::optional<size_t> connectedNameIndexOpt;
 };
 
 struct Executor

@@ -17,9 +17,9 @@
 
 #include "ast.h"
 #include "executor.h"
-#include "internal_functions.h"
 #include "tokenizer.h"
 
+import anka;
 import utility;
 
 const auto constexpr MAJOR_VERSION = "0";

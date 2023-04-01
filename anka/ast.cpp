@@ -1,6 +1,7 @@
 #include "ast.h"
 
 #include <algorithm>
+#include <cassert>
 #include <charconv>
 #include <format>
 #include <iterator>
@@ -9,7 +10,7 @@
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view.hpp>
 
-#include "internal_functions.h"
+import anka;
 
 template <class T>
 concept TokenForwardIterator =
@@ -17,7 +18,7 @@ concept TokenForwardIterator =
 
 // Forward declerations
 auto extractTuple(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
-                  TokenForwardIterator auto tokensEnd, bool isConnected) -> anka::Word;
+                  TokenForwardIterator auto tokensEnd, std::optional<size_t> connectedNameOpt) -> anka::Word;
 auto extractArray(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
                   TokenForwardIterator auto tokensEnd) -> anka::Word;
 auto extractExecutor(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
@@ -103,7 +104,7 @@ auto extractWords(const std::string_view content, anka::Context &context, TokenF
   using namespace anka;
 
   std::vector<anka::Word> words;
-  auto isConnected = false;
+  std::optional<size_t> connectedNameIndexOpt;
   for (; tokenIter != tokensEnd;)
   {
     if (tokenIter->type == finisherType)
@@ -132,7 +133,9 @@ auto extractWords(const std::string_view content, anka::Context &context, TokenF
       words.emplace_back(addNameWord(content, context, tokenIter));
       break;
     case TokenType::Connector:
-      isConnected = true;
+      assert(!words.empty());
+      assert(words.back().type == anka::WordType::Name);
+      connectedNameIndexOpt = words.back().index;
       tokenIter++;
       break;
     case TokenType::Assignment:
@@ -153,8 +156,8 @@ auto extractWords(const std::string_view content, anka::Context &context, TokenF
       break;
     case TokenType::TupleStart:
       ++tokenIter;
-      words.emplace_back(extractTuple(content, context, tokenIter, tokensEnd, isConnected));
-      isConnected = false;
+      words.emplace_back(extractTuple(content, context, tokenIter, tokensEnd, connectedNameIndexOpt));
+      connectedNameIndexOpt = std::nullopt;
       break;
     default:
       throw anka::ASTError{*tokenIter,
@@ -188,14 +191,14 @@ auto extractBlock(const std::string_view content, anka::Context &context, TokenF
 }
 
 auto extractTuple(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,
-                  TokenForwardIterator auto tokensEnd, bool isConnected) -> anka::Word
+                  TokenForwardIterator auto tokensEnd, std::optional<size_t> connectedNameOpt) -> anka::Word
 {
   using namespace anka;
 
   return createWord(context,
                     anka::Tuple{extractWords(content, context, tokenIter, tokensEnd,
                                              {TokenType::SentenceEnd, TokenType::ArrayEnd}, TokenType::TupleEnd),
-                                isConnected});
+                                connectedNameOpt});
 }
 
 auto extractExecutor(const std::string_view content, anka::Context &context, TokenForwardIterator auto &tokenIter,

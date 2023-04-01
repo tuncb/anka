@@ -74,7 +74,7 @@ TEST_CASE("simple tuple")
 
   CHECK_EQ(ast.context.tuples[0].words,
            std::vector<Word>{{WordType::IntegerNumber, 0}, {WordType::IntegerNumber, 1}, {WordType::IntegerNumber, 2}});
-  CHECK_FALSE(ast.context.tuples[0].isConnected);
+  CHECK_FALSE(ast.context.tuples[0].connectedNameIndexOpt);
   CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::Tuple, 0}});
 }
 
@@ -96,8 +96,8 @@ TEST_CASE("complex tuple")
                                                           {WordType::IntegerArray, 0},
                                                           {WordType::Tuple, 0},
                                                           {WordType::IntegerNumber, 3}});
-  CHECK_FALSE(ast.context.tuples[0].isConnected);
-  CHECK_FALSE(ast.context.tuples[1].isConnected);
+  CHECK_FALSE(ast.context.tuples[0].connectedNameIndexOpt);
+  CHECK_FALSE(ast.context.tuples[1].connectedNameIndexOpt);
   CHECK_EQ(ast.sentences[0].words, std::vector<Word>{{WordType::Tuple, 1}});
 }
 
@@ -209,6 +209,8 @@ TEST_CASE("executor")
       ast.context.executors[0].words,
       std::vector<Word>{{WordType::Name, 0}, {WordType::Name, 1}, {WordType::Tuple, 0}, {WordType::PlaceHolder, 1}});
   REQUIRE_EQ(ast.context.tuples.size(), 1);
+  REQUIRE(ast.context.tuples[0].connectedNameIndexOpt);
+  CHECK_EQ(ast.context.tuples[0].connectedNameIndexOpt.value(), 1);
   REQUIRE_EQ(ast.context.tuples[0].words, std::vector<Word>{{WordType::IntegerNumber, 0}, {WordType::PlaceHolder, 0}});
 }
 
