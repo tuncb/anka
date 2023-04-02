@@ -69,8 +69,6 @@ auto execute(anka::Context &context, const std::string_view content) -> bool
     }
     return false;
   }
-
-  return true;
 }
 
 auto executeRepl(anka::Context &context) -> void

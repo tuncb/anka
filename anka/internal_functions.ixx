@@ -33,6 +33,8 @@ export enum class InternalFunctionType
   DoubleArray__DoubleArray,
   IntBinaryOpt_IntArray__Int,
   DoubleBinaryOpt_DoubleArray__Double,
+  IntBinaryOpt_IntArray__IntArray,
+  DoubleBinaryOpt_DoubleArray__DoubleArray,
 };
 
 export auto toString(InternalFunctionType type) -> std::string
@@ -79,6 +81,10 @@ export auto toString(InternalFunctionType type) -> std::string
     return "{int int -> int} (int) -> int";
   case InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double:
     return "{double double -> double} (double) -> double";
+  case InternalFunctionType::IntBinaryOpt_IntArray__IntArray:
+    return "{int int -> int} (int) -> (int)";
+  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__DoubleArray:
+    return "{double double -> double} (double) -> (double)";
   }
 
   throw std::runtime_error("Fatal Error: Unexpected internal function type in toString function");
@@ -109,6 +115,8 @@ export auto nrArguments(InternalFunctionType type) -> int
   case InternalFunctionType::Double_Double_Bool:
   case InternalFunctionType::IntBinaryOpt_IntArray__Int:
   case InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double:
+  case InternalFunctionType::IntBinaryOpt_IntArray__IntArray:
+  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__DoubleArray:
     return 2;
   }
 
@@ -237,11 +245,21 @@ template <typename T> auto to_double(T val) -> double
 
 export template <typename R, typename T> using BinaryOpt = R(*)(T, T);
 
-template <typename T, typename R> auto foldl(BinaryOpt<T, R> func, const std::vector<T> &vec)
+template <typename T, typename R> auto foldl(BinaryOpt<T, R> func, const std::vector<T> &vec) -> R
 {
   if (vec.empty())
-    return (T)0;
+    return (R)0;
   return std::accumulate(vec.begin() + 1, vec.end(), vec.front(), func);
+}
+
+template <typename T, typename R> auto scanl(BinaryOpt<T, R> func, const std::vector<T> &vec) -> std::vector<R>
+{
+  if (vec.empty())
+    return vec;
+  std::vector<R> res;
+  res.resize(vec.size());
+  std::partial_sum(vec.begin(), vec.end(), res.begin(), func);
+  return res;
 }
 
 export auto getInternalFunctions() -> const std::unordered_map<std::string, std::vector<anka::InternalFunction>> &
@@ -305,6 +323,10 @@ export auto getInternalFunctions() -> const std::unordered_map<std::string, std:
   map["foldl"] = {
       {&anka::foldl<int, int>, InternalFunctionType::IntBinaryOpt_IntArray__Int},
       {&anka::foldl<double, double>, InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double},
+  };
+  map["scanl"] = {
+      {&anka::scanl<int, int>, InternalFunctionType::IntBinaryOpt_IntArray__IntArray},
+      {&anka::scanl<double, double>, InternalFunctionType::DoubleBinaryOpt_DoubleArray__DoubleArray},
   };
 
   functionMapOpt = std::move(map);
@@ -374,6 +396,8 @@ export auto getCategory(anka::InternalFunctionType type) -> InternalFunctionCate
   case InternalFunctionType::Double_Double_Bool:
   case InternalFunctionType::IntBinaryOpt_IntArray__Int:
   case InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double:
+  case InternalFunctionType::IntBinaryOpt_IntArray__IntArray:
+  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__DoubleArray:
     return InternalFunctionCategory::Uncategorized;
   };
 

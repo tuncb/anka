@@ -87,6 +87,8 @@ export auto checkOverloadCompatibility(const anka::Context &context, anka::Inter
   case InternalFunctionType::Double_Double_Bool:
   case InternalFunctionType::IntBinaryOpt_IntArray__Int:
   case InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double:
+  case InternalFunctionType::IntBinaryOpt_IntArray__IntArray:
+  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__DoubleArray:
     break; // two arguments, will be checked below.
   };
 
@@ -125,9 +127,11 @@ export auto checkOverloadCompatibility(const anka::Context &context, anka::Inter
     return (isIntegerType(first) && isDoubleType(second)) || (isIntegerType(second) && isDoubleType(first));
   }
   case InternalFunctionType::IntBinaryOpt_IntArray__Int:
+  case InternalFunctionType::IntBinaryOpt_IntArray__IntArray:
     return hasFunctionCategory(context, first, InternalFunctionCategory::BinaryOptInteger__Integer) &&
            second.type == WordType::IntegerArray;
   case InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double:
+  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__DoubleArray:
     return hasFunctionCategory(context, first, InternalFunctionCategory::BinaryOptDouble__Double) &&
            second.type == WordType::DoubleArray;
   };
@@ -300,7 +304,7 @@ auto foldTwoArgumentWithRankPolyFunction(anka::Context &context, const anka::Wor
   return std::nullopt;
 }
 
-template <typename R, typename T>
+template <typename RAlgo, typename R, typename T>
 auto foldBinaryOptWithArray(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func,
                             const anka::InternalFunctionCategory category) -> std::optional<anka::Word>
 {
@@ -323,11 +327,11 @@ auto foldBinaryOptWithArray(anka::Context &context, const anka::Word &input, con
 
   auto &&vec = *optVec2;
 
-  using AlgorithmFunc = R (*)(BinaryOpt<R, T>, const std::vector<T> &);
+  using AlgorithmFunc = RAlgo (*)(BinaryOpt<R, T>, const std::vector<T> &);
   auto algo = (AlgorithmFunc)func.ptr;
 
   auto ret = algo(binaryOpt, vec);
-  return createWord(context, ret);
+  return createWord(context, std::move(ret));
 }
 
 export auto foldFunction(anka::Context &context, const anka::Word &input, const anka::InternalFunction &func)
@@ -373,10 +377,17 @@ export auto foldFunction(anka::Context &context, const anka::Word &input, const 
   case InternalFunctionType::DoubleArray__DoubleArray:
     return foldSingleArgumentNoRankPolyFunction<std::vector<double>, const std::vector<double> &>(context, input, func);
   case InternalFunctionType::IntBinaryOpt_IntArray__Int:
-    return foldBinaryOptWithArray<int, int>(context, input, func, InternalFunctionCategory::BinaryOptInteger__Integer);
+    return foldBinaryOptWithArray<int, int, int>(context, input, func,
+                                                 InternalFunctionCategory::BinaryOptInteger__Integer);
   case InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double:
-    return foldBinaryOptWithArray<double, double>(context, input, func,
-                                                  InternalFunctionCategory::BinaryOptDouble__Double);
+    return foldBinaryOptWithArray<double, double, double>(context, input, func,
+                                                          InternalFunctionCategory::BinaryOptDouble__Double);
+  case InternalFunctionType::IntBinaryOpt_IntArray__IntArray:
+    return foldBinaryOptWithArray<std::vector<int>, int, int>(context, input, func,
+                                                              InternalFunctionCategory::BinaryOptInteger__Integer);
+  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__DoubleArray:
+    return foldBinaryOptWithArray<std::vector<double>, double, double>(
+        context, input, func, InternalFunctionCategory::BinaryOptDouble__Double);
   }
   return std::nullopt;
 }
