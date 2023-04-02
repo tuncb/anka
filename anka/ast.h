@@ -128,6 +128,53 @@ auto createWord(Context &context, Tuple &&tuple) -> Word;
 auto createWord(Context &context, Executor &&executor) -> Word;
 auto createWord(Context &context, Block &&block) -> Word;
 
+auto getFoldableWord(const anka::Context &context, const anka::Word &word) -> std::optional<anka::Word>;
+auto getWord(const anka::Context &context, const anka::Word &input, size_t index) -> std::optional<anka::Word>;
+auto getAllWords(const anka::Context &context, const anka::Word &input) -> std::vector<anka::Word>;
+auto getWordCount(const anka::Context &context, const anka::Word &word) -> size_t;
+
 auto injectInternalConstants(Context &context) -> void;
+
+template <typename T> anka::WordType getWordType()
+{
+  using namespace anka;
+  if constexpr (std::is_same_v<T, int>)
+    return WordType::IntegerNumber;
+  else if constexpr (std::is_same_v<T, double>)
+    return WordType::DoubleNumber;
+  else if constexpr (std::is_same_v<T, std::string>)
+    return WordType::Name;
+  else if constexpr (std::is_same_v<T, const std::vector<int> &>)
+    return WordType::IntegerArray;
+  else if constexpr (std::is_same_v<T, const std::vector<double> &>)
+    return WordType::DoubleArray;
+  else if constexpr (std::is_same_v<T, bool>)
+    return WordType::Boolean;
+  else if constexpr (std::is_same_v<T, const std::vector<bool> &>)
+    return WordType::BooleanArray;
+  else
+    []<bool flag = false>()
+    {
+      static_assert(flag, "No match found in function getWordType().");
+    }
+  ();
+}
+
+template <typename T> tl::optional<T> extractValue(const anka::Context &context, const anka::Word &input, size_t index)
+{
+  using namespace anka;
+  if (index > 0 && input.type != WordType::Tuple)
+    return tl::nullopt;
+
+  const auto wOpt = getWord(context, input, index);
+  if (!wOpt)
+    return tl::nullopt;
+
+  auto &&w = wOpt.value();
+  if (w.type != getWordType<T>())
+    return tl::nullopt;
+
+  return getValue<T>(context, w.index);
+}
 
 } // namespace anka

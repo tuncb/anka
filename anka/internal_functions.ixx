@@ -8,11 +8,6 @@ module;
 #include <unordered_map>
 export module anka:internal_functions;
 
-// Ensure switches cover all enumeration cases
-#pragma warning(push)
-#pragma warning(default : 4062)
-#pragma warning(error : 4062)
-
 namespace anka
 {
 
@@ -36,6 +31,8 @@ export enum class InternalFunctionType
   DoubleArray__Int,
   DoubleArray__Double,
   DoubleArray__DoubleArray,
+  IntBinaryOpt_IntArray__Int,
+  DoubleBinaryOpt_DoubleArray__Double,
 };
 
 export auto toString(InternalFunctionType type) -> std::string
@@ -78,6 +75,10 @@ export auto toString(InternalFunctionType type) -> std::string
     return "(double) -> (double)";
   case InternalFunctionType::DoubleArray__Double:
     return "(double) -> double";
+  case InternalFunctionType::IntBinaryOpt_IntArray__Int:
+    return "{int int -> int} (int) -> int";
+  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double:
+    return "{double double -> double} (double) -> double";
   }
 
   throw std::runtime_error("Fatal Error: Unexpected internal function type in toString function");
@@ -101,12 +102,13 @@ export auto nrArguments(InternalFunctionType type) -> int
   case InternalFunctionType::DoubleArray__DoubleArray:
   case InternalFunctionType::DoubleArray__Double:
     return 1;
-    break;
   case InternalFunctionType::Int_Int__Int:
   case InternalFunctionType::Int_Int_Bool:
   case InternalFunctionType::Bool_Bool__Bool:
   case InternalFunctionType::Double_Double__Double:
   case InternalFunctionType::Double_Double_Bool:
+  case InternalFunctionType::IntBinaryOpt_IntArray__Int:
+  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double:
     return 2;
   }
 
@@ -233,6 +235,15 @@ template <typename T> auto to_double(T val) -> double
   return val;
 }
 
+export template <typename R, typename T> using BinaryOpt = R(*)(T, T);
+
+template <typename T, typename R> auto foldl(BinaryOpt<T, R> func, const std::vector<T> &vec)
+{
+  if (vec.empty())
+    return (T)0;
+  return std::accumulate(vec.begin() + 1, vec.end(), vec.front(), func);
+}
+
 export auto getInternalFunctions() -> const std::unordered_map<std::string, std::vector<anka::InternalFunction>> &
 {
   static std::optional<std::unordered_map<std::string, std::vector<anka::InternalFunction>>> functionMapOpt;
@@ -291,6 +302,10 @@ export auto getInternalFunctions() -> const std::unordered_map<std::string, std:
                 {&anka::sum<double>, InternalFunctionType::DoubleArray__Double}};
   map["to_double"] = {{&anka::to_double<int>, InternalFunctionType::Int__Double},
                       {&anka::to_double<double>, InternalFunctionType::Double__Double}};
+  map["foldl"] = {
+      {&anka::foldl<int, int>, InternalFunctionType::IntBinaryOpt_IntArray__Int},
+      {&anka::foldl<double, double>, InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double},
+  };
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();
@@ -326,6 +341,43 @@ export template <typename T> auto getInternalConstants() -> const std::unordered
   ();
 }
 
-} // namespace anka
+export enum class InternalFunctionCategory
+{
+  BinaryOptInteger__Integer,
+  BinaryOptDouble__Double,
+  Uncategorized
+};
 
-#pragma warning(pop)
+export auto getCategory(anka::InternalFunctionType type) -> InternalFunctionCategory
+{
+  switch (type)
+  {
+  case InternalFunctionType::Int_Int__Int:
+    return InternalFunctionCategory::BinaryOptInteger__Integer;
+  case InternalFunctionType::Double_Double__Double:
+    return InternalFunctionCategory::BinaryOptDouble__Double;
+  case InternalFunctionType::Int__IntArray:
+  case InternalFunctionType::Int__Int:
+  case InternalFunctionType::Int__Double:
+  case InternalFunctionType::IntArray__Int:
+  case InternalFunctionType::IntArray__IntArray:
+  case InternalFunctionType::Double__Double:
+  case InternalFunctionType::DoubleArray__Int:
+  case InternalFunctionType::DoubleArray__Double:
+  case InternalFunctionType::DoubleArray__DoubleArray:
+  case InternalFunctionType::Bool__Bool:
+  case InternalFunctionType::BoolArray__Int:
+  case InternalFunctionType::BoolArray__Bool:
+  case InternalFunctionType::BoolArray__BoolArray:
+  case InternalFunctionType::Int_Int_Bool:
+  case InternalFunctionType::Bool_Bool__Bool:
+  case InternalFunctionType::Double_Double_Bool:
+  case InternalFunctionType::IntBinaryOpt_IntArray__Int:
+  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double:
+    return InternalFunctionCategory::Uncategorized;
+  };
+
+  throw std::runtime_error("Fatal Error: Unexpected internal function type in getCategory function");
+}
+
+} // namespace anka

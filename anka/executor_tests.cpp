@@ -6,8 +6,8 @@
 
 #include "ast.h"
 #include "executor.h"
-#include "tokenizer.h"
 #include "test_utilities.h"
+#include "tokenizer.h"
 
 TEST_CASE("empty context")
 {
@@ -135,5 +135,11 @@ TEST_CASE("user defined names")
 TEST_CASE("double int interchange")
 {
   CHECK_EQ(executeText("div | {to_double sum} length | (1 2 3 4 5 6)"), "3.5");
+}
+
+TEST_CASE("binaryOptAlgorithms")
+{
+  CHECK_EQ(executeText("foldl[add] (1 2 3 4 5 6)"), "21");
+  CHECK_EQ(executeText("foldl[add] (1.0 1.5 2.0)"), "4.5");
 }
 #endif

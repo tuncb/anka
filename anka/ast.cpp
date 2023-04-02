@@ -413,3 +413,67 @@ auto anka::createWord(Context &context, std::vector<double> &&vec) -> Word
   context.doubleArrays.push_back(std::move(vec));
   return anka::Word{anka::WordType::DoubleArray, context.doubleArrays.size() - 1};
 }
+
+auto anka::getFoldableWord(const anka::Context &context, const anka::Word &word) -> std::optional<Word>
+{
+  using namespace anka;
+
+  if (word.type == WordType::Assignment || word.type == WordType::PlaceHolder)
+    return std::nullopt;
+
+  if (word.type != WordType::Name)
+    return word;
+
+  const auto &name = context.names[word.index];
+
+  if (getInternalFunctions().contains(name))
+    return word;
+
+  if (auto iter = context.userDefinedNames.find(name); iter != context.userDefinedNames.end())
+    return iter->second;
+
+  return std::nullopt;
+}
+
+auto anka::getWord(const anka::Context &context, const anka::Word &input, size_t index) -> std::optional<anka::Word>
+{
+  using namespace anka;
+  auto candidate = input;
+  if (input.type == WordType::Tuple)
+  {
+    const auto &tup = context.tuples[input.index];
+    if (tup.words.size() <= index)
+      return std::nullopt;
+    candidate = tup.words[index];
+  }
+
+  if (candidate.type == WordType::Name)
+  {
+    return getFoldableWord(context, candidate);
+  }
+
+  return candidate;
+}
+
+auto anka::getAllWords(const anka::Context &context, const anka::Word &input) -> std::vector<anka::Word>
+{
+  using namespace anka;
+  if (input.type == WordType::Tuple)
+  {
+    const auto &tup = context.tuples[input.index];
+    return tup.words;
+  }
+
+  return {input};
+}
+
+auto anka::getWordCount(const anka::Context &context, const anka::Word &word) -> size_t
+{
+  using namespace anka;
+  if (word.type != WordType::Tuple)
+  {
+    return 1;
+  }
+
+  return getValue<const Tuple &>(context, word.index).words.size();
+}
