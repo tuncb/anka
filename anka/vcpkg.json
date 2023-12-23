@@ -3,11 +3,15 @@
   "name": "ankac",
   "version": "0.0.1",
   "dependencies": [
+    {
+      "name": "fmt",
+      "version>=": "10.1.1"
+    },
     "doctest",
     "range-v3",
-    "fmt",
     "argumentum",
     "replxx",
     "tl-optional"
-  ]
+  ],
+  "builtin-baseline": "04f7d34c26defd9a54397dcbbb26b1ce3573614d"
 }
