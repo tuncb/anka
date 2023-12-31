@@ -141,9 +141,13 @@ auto executeRepl(anka::Context &context) -> void
       std::sort(definitions.begin(), definitions.end(),
                 [](const auto &lhs, const auto &rhs) { return lhs.name < rhs.name; });
 
+      auto maxLength = std::ranges::max_element(definitions, [](const auto &def1, const auto &def2) {
+                         return def1.name.length() < def2.name.length();
+                       })->name.length();
+
       for (auto definition : definitions)
       {
-        std::cout << toString(definition);
+        std::cout << std::format("{:<{}}: {}\n", definition.name, maxLength, toString(definition));
       }
       rx.history_add(input);
     }
