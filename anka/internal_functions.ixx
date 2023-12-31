@@ -97,6 +97,17 @@ auto getArgumentSize(anka::Context &context, const std::vector<anka::Word> &word
   return anka::getItemSize<std::vector<T>>(context, words[index].index);
 }
 
+template <typename... ArgTypes>
+auto createArguments(anka::Context &context, const std::vector<anka::Word> &words, const std::vector<bool> &expandArray,
+                     size_t arrIndex) -> std::tuple<ArgTypes...>
+{
+  // see https://stackoverflow.com/questions/65261797/varadic-template-to-tuple-is-reversed
+  // using an initilizer list fixes the order
+  size_t i = 0;
+  auto args = std::tuple<ArgTypes...>{getValue<ArgTypes>(context, words, expandArray, arrIndex, i++)...};
+  return args;
+}
+
 template <typename ReturnType, typename... ArgTypes>
 auto createFunctionExecutor(void *funPtr) -> InternalFunctionExecuter
 {
@@ -104,11 +115,10 @@ auto createFunctionExecutor(void *funPtr) -> InternalFunctionExecuter
   FunType func = static_cast<FunType>(funPtr);
 
   auto executor = [func](anka::Context &context, const std::vector<anka::Word> &words,
-                          const std::vector<bool> &expandArray) -> std::optional<anka::Word> {
+                         const std::vector<bool> &expandArray) -> std::optional<anka::Word> {
     if constexpr (!anka::isExpandable<ReturnType>())
     {
-      size_t argIndex = 0;
-      auto args = std::make_tuple(getValue<ArgTypes>(context, words, expandArray, 0, argIndex++)...);
+      auto args = createArguments<ArgTypes...>(context, words, expandArray, 0);
       if constexpr (std::is_same<ReturnType, void>::value)
       {
         std::apply(func, args);
@@ -128,8 +138,7 @@ auto createFunctionExecutor(void *funPtr) -> InternalFunctionExecuter
 
       if (max_size == 1)
       {
-        size_t argIndex = 0;
-        auto args = std::make_tuple(getValue<ArgTypes>(context, words, expandArray, 0, argIndex++)...);
+        auto args = createArguments<ArgTypes...>(context, words, expandArray, 0);
         if constexpr (std::is_same<ReturnType, void>::value)
         {
           std::apply(func, args);
@@ -146,8 +155,7 @@ auto createFunctionExecutor(void *funPtr) -> InternalFunctionExecuter
       {
         for (auto arrIndex = 0; arrIndex < max_size; ++arrIndex)
         {
-          size_t argIndex = 0;
-          auto args = std::make_tuple(getValue<ArgTypes>(context, words, expandArray, arrIndex, argIndex++)...);
+          auto args = createArguments<ArgTypes...>(context, words, expandArray, arrIndex);
           std::apply(func, args);
         }
         return std::nullopt;
@@ -157,8 +165,7 @@ auto createFunctionExecutor(void *funPtr) -> InternalFunctionExecuter
         std::vector<ReturnType> vec(max_size);
         for (auto arrIndex = 0; arrIndex < max_size; ++arrIndex)
         {
-          size_t argIndex = 0;
-          auto args = std::make_tuple(getValue<ArgTypes>(context, words, expandArray, arrIndex, argIndex++)...);
+          auto args = createArguments<ArgTypes...>(context, words, expandArray, arrIndex);
           vec[arrIndex] = std::apply(func, args);
         }
         return anka::createWord(context, std::move(vec));
