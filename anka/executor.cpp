@@ -79,10 +79,16 @@ auto findOverload(const anka::Context &context, const std::string &name, const a
   for (auto interpretation : interpretations)
   {
     // anka::WordType::Name is a dummy => fix this!!!, do we really need the result type in the definition?
-    const auto definition = anka::InternalFunctionDefinition{name, wordTypes, anka::WordType::Name};
+    const auto definition = anka::InternalFunctionDefinition{name, interpretation.arguments, anka::WordType::Name};
     auto iter = internalFunctions.find(definition);
     if (iter != internalFunctions.end())
     {
+      auto isExpanding = std::ranges::any_of(interpretation.expandArray, [](bool v) { return v; });
+      
+      // we don't support array of arrays
+      if (isExpanding && !anka::isExpandable(iter->first.returnType))
+          continue;
+
       return ExecutionInformation{iter->second, interpretation, allWords};
     }
   }
