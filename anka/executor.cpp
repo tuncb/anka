@@ -36,7 +36,7 @@ struct Interpretation
 auto getAllInterpretations(const std::vector<anka::WordType> &wordTypes) -> std::vector<Interpretation>
 {
   std::vector<Interpretation> allPossibilities;
-  allPossibilities.push_back({wordTypes, std::vector<bool>(false, allPossibilities.size())});
+  allPossibilities.push_back({wordTypes, std::vector<bool>(wordTypes.size())});
 
   for (auto [i, type] : ranges::views::enumerate(wordTypes))
   {
