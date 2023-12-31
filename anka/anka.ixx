@@ -3,3 +3,4 @@ module;
 #include <compare>
 export module anka;
 export import :internal_functions;
+export import :errors;

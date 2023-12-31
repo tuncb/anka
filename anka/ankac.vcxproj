@@ -251,6 +251,7 @@
   <ItemGroup>
     <ClCompile Include="anka.cpp" />
     <ClCompile Include="anka.ixx" />
+    <ClCompile Include="errors.ixx" />
     <ClCompile Include="ast.cpp" />
     <ClCompile Include="ast_tests.cpp" />
     <ClCompile Include="executor.cpp" />

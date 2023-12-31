@@ -19,6 +19,8 @@ module;
 #include "ast.h"
 export module anka:internal_functions;
 
+import :errors;
+
 namespace anka
 {
 
@@ -76,6 +78,10 @@ auto getValue(anka::Context &context, const std::vector<anka::Word> &words, cons
     if (shouldExpandArray)
     {
       auto &&vec = anka::getValue<std::vector<T>>(context, word.index);
+      if (arrIndex >= vec.size())
+      {
+        throw anka::ExecutionError{word, std::nullopt, "Array size mismatch"};
+      }
       return vec[arrIndex];
     }
 

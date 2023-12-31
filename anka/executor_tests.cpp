@@ -9,6 +9,8 @@
 #include "test_utilities.h"
 #include "tokenizer.h"
 
+import anka;
+
 TEST_CASE("empty context")
 {
   anka::Context context;
