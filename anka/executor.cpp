@@ -83,11 +83,31 @@ struct ExecutionInformation
   std::vector<anka::Word> allWords;
 };
 
+auto replaceUserDefinedNames(const anka::Context &context, const std::vector<anka::Word> &words)
+    -> std::vector<anka::Word>
+{
+  auto replaced = words;
+  for (auto [i, w] : ranges::views::enumerate(replaced))
+  {
+    if (w.type == anka::WordType::Name)
+    {
+      auto name = anka::getValue<std::string>(context, w.index);
+      auto iter = context.userDefinedNames.find(name);
+      if (iter != context.userDefinedNames.end())
+      {
+        replaced[i] = iter->second;
+      }
+    }
+  }
+
+  return replaced;
+}
+
 auto findOverload(const anka::Context &context, const std::string &name, const anka::Word &word)
     -> std::optional<ExecutionInformation>
 {
   const auto &internalFunctions = anka::getInternalFunctions();
-  const auto allWords = anka::getAllWords(context, word);
+  const auto allWords = replaceUserDefinedNames(context, anka::getAllWords(context, word));
   const auto wordTypes = anka::getWordTypes(allWords);
 
   const auto interpretations = getAllInterpretations(wordTypes);
