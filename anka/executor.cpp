@@ -1,35 +1,92 @@
 #include "executor.h"
 
+#include <algorithm>
 #include <format>
 #include <numeric>
 
-#include <range/v3/view/drop.hpp>
-#include <range/v3/view/reverse.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view.hpp>
 
 import anka;
 
 // forward declerations
 auto executeWords(anka::Context &context, const std::vector<anka::Word> &words) -> std::optional<anka::Word>;
 
-auto nameExists(const std::string &name) -> bool
+auto getArrayItemType(anka::WordType arrType) -> std::optional<anka::WordType>
 {
-  const auto &internalFunctions = anka::getInternalFunctions();
-  auto iter = internalFunctions.find(name);
-  return iter != internalFunctions.end();
+  switch (arrType)
+  {
+  case anka::WordType::IntegerArray:
+    return anka::WordType::IntegerNumber;
+  case anka::WordType::DoubleArray:
+    return anka::WordType::DoubleNumber;
+  case anka::WordType::BooleanArray:
+    return anka::WordType::Boolean;
+  default:
+    return std::nullopt;
+  }
 }
 
-auto findOverload(const anka::Context &context, const std::string &name, const anka::Word &word)
-    -> std::optional<anka::InternalFunction>
+struct Interpretation
 {
-  const auto &internalFunctions = anka::getInternalFunctions();
-  if (auto iter = internalFunctions.find(name); iter != internalFunctions.end())
+  std::vector<anka::WordType> arguments;
+  std::vector<bool> expandArray;
+};
+
+auto getAllInterpretations(const std::vector<anka::WordType> &wordTypes) -> std::vector<Interpretation>
+{
+  std::vector<Interpretation> allPossibilities;
+  allPossibilities.push_back({wordTypes, std::vector<bool>(false, allPossibilities.size())});
+
+  for (auto [i, type] : ranges::views::enumerate(wordTypes))
   {
-    for (auto &&overload : iter->second)
+    const auto itemType = getArrayItemType(type);
+    if (itemType)
     {
-      if (checkOverloadCompatibility(context, overload.type, word))
-        return overload;
+      std::vector<Interpretation> newOnes;
+
+      for (auto possibility : allPossibilities)
+      {
+        auto newPossibility = possibility;
+        newPossibility.arguments[i] = itemType.value();
+        newPossibility.expandArray[i] = true;
+        newOnes.push_back(newPossibility);
+      }
+
+      allPossibilities.insert(allPossibilities.end(), newOnes.begin(), newOnes.end());
     }
   }
+
+  return allPossibilities;
+}
+
+struct ExecutionInformation
+{
+  anka::InternalFunctionExecuter executer;
+  Interpretation interpretation;
+  std::vector<anka::Word> allWords;
+};
+
+auto findOverload(const anka::Context &context, const std::string &name, const anka::Word &word)
+    -> std::optional<ExecutionInformation>
+{
+  const auto &internalFunctions = anka::getInternalFunctions();
+  const auto allWords = anka::getAllWords(context, word);
+  const auto wordTypes = anka::getWordTypes(allWords);
+
+  const auto interpretations = getAllInterpretations(wordTypes);
+
+  for (auto interpretation : interpretations)
+  {
+    // anka::WordType::Name is a dummy => fix this!!!, do we really need the result type in the definition?
+    const auto definition = anka::InternalFunctionDefinition{name, wordTypes, anka::WordType::Name};
+    auto iter = internalFunctions.find(definition);
+    if (iter != internalFunctions.end())
+    {
+      return ExecutionInformation{iter->second, interpretation, allWords};
+    }
+  }
+
   return std::nullopt;
 }
 
@@ -91,15 +148,23 @@ auto foldtuple(anka::Context &context, const anka::Word &w1, const anka::Word &w
   {
     const auto &connectedName = anka::getValue<std::string>(context, tup.connectedNameIndexOpt.value());
     auto &&internal_functions = anka::getInternalFunctions();
-    if (auto iter = internal_functions.find(connectedName); iter != internal_functions.end())
+
+    auto kv = ranges::views::keys(internal_functions);
+    std::vector<anka::InternalFunctionDefinition> definitions{kv.begin(), kv.end()};
+
+    auto found = definitions |
+                 ranges::views::filter([&connectedName](const auto &def) { return def.name == connectedName; }) |
+                 ranges::to<std::vector<anka::InternalFunctionDefinition>>;
+
+    if (!found.empty())
     {
-      auto maxArgumentFuncIter =
-          std::max_element(iter->second.begin(), iter->second.end(),
-                           [](const anka::InternalFunction &f1, const anka::InternalFunction &f2) {
-                             return anka::nrArguments(f1.type) < anka::nrArguments(f2.type);
-                           });
-      int nrWordsToInsert = std::min(anka::nrArguments(maxArgumentFuncIter->type) - static_cast<int>(tup.words.size()),
-                                     static_cast<int>(wordsToBeInserted.size()));
+      auto maxArgIter = std::max_element(found.begin(), found.end(), [](const auto &def1, const auto &def2) {
+        return def1.argumentTypes.size() < def2.argumentTypes.size();
+      });
+
+      int nrWordsToInsert =
+          std::min(static_cast<int>(maxArgIter->argumentTypes.size()) - static_cast<int>(tup.words.size()),
+                   static_cast<int>(wordsToBeInserted.size()));
       if (nrWordsToInsert > 0)
       {
         words.insert(words.end(), wordsToBeInserted.begin(), wordsToBeInserted.begin() + nrWordsToInsert);
@@ -155,9 +220,21 @@ auto foldExecutor(anka::Context &context, const anka::Word &w1, const anka::Word
   return createWord(context, Tuple{res, false});
 }
 
+auto foldFunction(anka::Context &context, const ExecutionInformation &info)
+    -> std::optional<anka::Word>
+{
+  if (std::none_of(info.interpretation.expandArray.begin(), info.interpretation.expandArray.end(),
+                   std::logical_not<bool>()))
+  {
+    return info.executer(context, info.allWords, info.interpretation.expandArray);
+  }
+
+  return std::nullopt;
+}
+
 auto checkIfNameIsAvailable(anka::Context &context, const std::string &name) -> bool
 {
-  if (anka::getInternalFunctions().contains(name))
+  if (!anka::getInternalFunctionDefinitionsWithName(name).empty())
     return false;
   if (context.userDefinedNames.contains(name))
     return false;
@@ -222,10 +299,10 @@ auto fold(anka::Context &context, const anka::Word &lhs, const anka::Word &rhs) 
   if (lhs.type == WordType::Name)
   {
     const auto &name = context.names[lhs.index];
-    auto functOpt = findOverload(context, name, rhs);
-    if (functOpt)
+    auto interpretation = findOverload(context, name, rhs);
+    if (interpretation)
     {
-      auto wordOpt = foldFunction(context, rhs, functOpt.value());
+      auto wordOpt = foldFunction(context, interpretation.value());
       if (!wordOpt)
       {
         throw anka::ExecutionError{rhs, lhs, "Could not fold words."};

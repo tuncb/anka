@@ -137,20 +137,13 @@ auto executeRepl(anka::Context &context) -> void
       const auto &internalFunctions = anka::getInternalFunctions();
 
       auto kv = std::views::keys(internalFunctions);
-      std::vector<std::string> names{kv.begin(), kv.end()};
-      std::sort(names.begin(), names.end());
-      auto maxLength =
-          std::max_element(names.begin(), names.end(), [](const std::string &name1, const std::string &name2) {
-            return name1.length() < name2.length();
-          })->length();
+      std::vector<anka::InternalFunctionDefinition> definitions{kv.begin(), kv.end()};
+      std::sort(definitions.begin(), definitions.end(),
+                [](const auto &lhs, const auto &rhs) { return lhs.name < rhs.name; });
 
-      for (auto name : names)
+      for (auto definition : definitions)
       {
-        const auto &overloads = internalFunctions.at(name);
-        for (auto &overload : overloads)
-        {
-          std::cout << std::format("{:<{}}: {}\n", name, maxLength, anka::toString(overload.type));
-        }
+        std::cout << toString(definition);
       }
       rx.history_add(input);
     }

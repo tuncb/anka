@@ -7,6 +7,7 @@
 #include <iterator>
 
 #include <fmt/ranges.h>
+
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view.hpp>
 
@@ -323,26 +324,54 @@ auto anka::toString(const anka::Context &context, const anka::Word &word) -> std
   case WordType::Name: {
     const auto &name = context.names[word.index];
     auto &&internalFunctions = getInternalFunctions();
-    if (auto iter = internalFunctions.find(name); iter != internalFunctions.end())
-    {
-      if (iter->second.size() == 1)
-      {
-        return fmt::format("{}: {}", name, toString(iter->second.front().type));
-      }
-      else
-      {
-        auto toStr = [&name](const anka::InternalFunction &overload) {
-          return fmt::format("{}: {}", name, toString(overload.type));
-        };
 
-        auto definitions = iter->second | ranges::views::transform(toStr) | ranges::to<std::vector<std::string>>();
-        return fmt::format("{}", fmt::join(definitions, "\n"));
-      }
+    auto kv = ranges::views::keys(internalFunctions);
+    std::vector<anka::InternalFunctionDefinition> definitions{kv.begin(), kv.end()};
+    auto definitionTexts = definitions | ranges::views::filter([&name](const auto &def) { return def.name == name; }) |
+                           ranges::views::transform([](const auto &def) { return anka::toString(def); }) |
+                           ranges::to<std::vector<std::string>>();
+
+    if (!definitionTexts.empty())
+    {
+      return fmt::format("{}", fmt::join(definitionTexts, "\n"));
     }
+
     return name;
   }
   default:
     return "";
+  }
+}
+
+auto anka::toString(anka::WordType type) -> std::string
+{
+  switch (type)
+  {
+  case anka::WordType::Assignment:
+    return "=";
+  case anka::WordType::IntegerNumber:
+    return "int";
+  case anka::WordType::IntegerArray:
+    return "(int)";
+  case anka::WordType::DoubleNumber:
+    return "double";
+  case anka::WordType::DoubleArray:
+    return "(double)";
+  case anka::WordType::Boolean:
+    return "bool";
+  case anka::WordType::BooleanArray:
+    return "(bool)";
+  case anka::WordType::Name:
+    return "name";
+  case anka::WordType::Tuple:
+    return "tuple";
+  case anka::WordType::PlaceHolder:
+    return "_X";
+  case anka::WordType::Executor:
+    return "||";
+  case anka::WordType::Block:
+  default:
+    return "unknownType";
   }
 }
 
@@ -426,8 +455,13 @@ auto anka::getFoldableWord(const anka::Context &context, const anka::Word &word)
 
   const auto &name = context.names[word.index];
 
-  if (getInternalFunctions().contains(name))
+  auto kv = ranges::views::keys(getInternalFunctions());
+  std::vector<anka::InternalFunctionDefinition> definitions{kv.begin(), kv.end()};
+
+  if (std::any_of(definitions.begin(), definitions.end(), [&name](const auto &def) { return def.name == name; }))
+  {
     return word;
+  }
 
   if (auto iter = context.userDefinedNames.find(name); iter != context.userDefinedNames.end())
     return iter->second;
@@ -476,4 +510,9 @@ auto anka::getWordCount(const anka::Context &context, const anka::Word &word) ->
   }
 
   return getValue<const Tuple &>(context, word.index).words.size();
+}
+
+auto anka::getWordTypes(const std::vector<anka::Word> &words) -> std::vector<anka::WordType>
+{
+  return words | ranges::views::transform([](const auto &word) { return word.type; }) | ranges::to<std::vector<anka::WordType>>;
 }

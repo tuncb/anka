@@ -1,133 +1,173 @@
 module;
 #include <algorithm>
+#include <functional>
 #include <numbers>
 #include <numeric>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view.hpp>
+
+#include <fmt/core.h>
+#include <fmt/format.h>
+#include <fmt/ranges.h>
+#include <tl/optional.hpp>
+
+#include "ast.h"
 export module anka:internal_functions;
 
 namespace anka
 {
 
-export enum class InternalFunctionType
+export using InternalFunctionExecuter = std::function<std::optional<anka::Word>(
+    anka::Context &, const std::vector<anka::Word> &, const std::vector<bool> &expandArray)>;
+
+export struct InternalFunctionDefinition
 {
-  Int__IntArray,
-  Int__Int,
-  Int_Int__Int,
-  Int_Int_Bool,
-  Int__Double,
-  IntArray__Int,
-  IntArray__IntArray,
-  Bool__Bool,
-  Bool_Bool__Bool,
-  BoolArray__Int,
-  BoolArray__BoolArray,
-  BoolArray__Bool,
-  Double__Double,
-  Double_Double__Double,
-  Double_Double_Bool,
-  DoubleArray__Int,
-  DoubleArray__Double,
-  DoubleArray__DoubleArray,
-  IntBinaryOpt_IntArray__Int,
-  DoubleBinaryOpt_DoubleArray__Double,
-  IntBinaryOpt_IntArray__IntArray,
-  DoubleBinaryOpt_DoubleArray__DoubleArray,
+  std::string name;
+  std::vector<anka::WordType> argumentTypes;
+  anka::WordType returnType;
 };
 
-export auto toString(InternalFunctionType type) -> std::string
+export struct InternalFunctionDefinitionHash
 {
-  switch (type)
+  inline size_t operator()(const InternalFunctionDefinition &k) const
   {
-  case InternalFunctionType::Int__IntArray:
-    return "int -> (int)";
-  case InternalFunctionType::Int__Int:
-    return "int -> int";
-  case InternalFunctionType::Int__Double:
-    return "int -> double";
-  case InternalFunctionType::Int_Int__Int:
-    return "[int int] -> int";
-  case InternalFunctionType::Int_Int_Bool:
-    return "[int int] -> bool";
-  case InternalFunctionType::IntArray__Int:
-    return "(int) -> int";
-  case InternalFunctionType::IntArray__IntArray:
-    return "(int) -> (int)";
-  case InternalFunctionType::Bool__Bool:
-    return "bool -> bool";
-  case InternalFunctionType::Bool_Bool__Bool:
-    return "[bool bool] -> bool";
-  case InternalFunctionType::BoolArray__Int:
-    return "(bool) -> int";
-  case InternalFunctionType::BoolArray__Bool:
-    return "(bool) -> bool";
-  case InternalFunctionType::BoolArray__BoolArray:
-    return "(bool) -> (bool)";
-  case InternalFunctionType::Double__Double:
-    return "double -> double";
-  case InternalFunctionType::Double_Double__Double:
-    return "[double double] -> double";
-  case InternalFunctionType::Double_Double_Bool:
-    return "[double double] -> bool";
-  case InternalFunctionType::DoubleArray__Int:
-    return "(double) -> int";
-  case InternalFunctionType::DoubleArray__DoubleArray:
-    return "(double) -> (double)";
-  case InternalFunctionType::DoubleArray__Double:
-    return "(double) -> double";
-  case InternalFunctionType::IntBinaryOpt_IntArray__Int:
-    return "{int int -> int} (int) -> int";
-  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double:
-    return "{double double -> double} (double) -> double";
-  case InternalFunctionType::IntBinaryOpt_IntArray__IntArray:
-    return "{int int -> int} (int) -> (int)";
-  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__DoubleArray:
-    return "{double double -> double} (double) -> (double)";
-  }
+    auto customHash = std::hash<std::string>()(k.name);
 
-  throw std::runtime_error("Fatal Error: Unexpected internal function type in toString function");
+    for (auto wordType : k.argumentTypes)
+    {
+      customHash = customHash ^ std::hash<int>()(static_cast<int>(wordType));
+    }
+
+    return customHash;
+  }
+};
+
+export struct InternalFunctionDefinitionEqual
+{
+  inline bool operator()(const InternalFunctionDefinition &k1, const InternalFunctionDefinition &k2) const
+  {
+    return (k1.name == k2.name) && (k1.argumentTypes == k2.argumentTypes);
+  }
+};
+
+export auto toString(InternalFunctionDefinition definition) -> std::string
+{
+  std::vector<std::string> argText = definition.argumentTypes |
+                                     ranges::views::transform([](anka::WordType w) { return anka::toString(w); }) |
+                                     ranges::to<std::vector>();
+  return fmt::format("[{}] -> {}", fmt::join(argText, ", "), anka::toString(definition.returnType));
 }
 
-export auto nrArguments(InternalFunctionType type) -> int
+template <typename T>
+auto getValue(anka::Context &context, const std::vector<anka::Word> &words, const std::vector<bool> &expandArray,
+              size_t arrIndex, size_t index) -> ValueReturnType<T>::ReturnType
 {
-  switch (type)
+  auto word = words[index];
+
+  if constexpr (anka::isExpandable<T>())
   {
-  case InternalFunctionType::Int__IntArray:
-  case InternalFunctionType::Int__Int:
-  case InternalFunctionType::Int__Double:
-  case InternalFunctionType::IntArray__Int:
-  case InternalFunctionType::IntArray__IntArray:
-  case InternalFunctionType::Bool__Bool:
-  case InternalFunctionType::Double__Double:
-  case InternalFunctionType::BoolArray__Int:
-  case InternalFunctionType::BoolArray__Bool:
-  case InternalFunctionType::BoolArray__BoolArray:
-  case InternalFunctionType::DoubleArray__Int:
-  case InternalFunctionType::DoubleArray__DoubleArray:
-  case InternalFunctionType::DoubleArray__Double:
+    auto shouldExpandArray = expandArray[index];
+
+    if (shouldExpandArray)
+    {
+      auto &&vec = anka::getValue<std::vector<T>>(context, word.index);
+      return vec[arrIndex];
+    }
+
+    return anka::getValue<T>(context, word.index);
+  }
+  else
+  {
+    return anka::getValue<T>(context, word.index);
+  }
+}
+
+template <typename T>
+auto getArgumentSize(anka::Context &context, const std::vector<anka::Word> &words, const std::vector<bool> &expandArray,
+                     size_t index) -> size_t
+{
+  if (!expandArray[index])
     return 1;
-  case InternalFunctionType::Int_Int__Int:
-  case InternalFunctionType::Int_Int_Bool:
-  case InternalFunctionType::Bool_Bool__Bool:
-  case InternalFunctionType::Double_Double__Double:
-  case InternalFunctionType::Double_Double_Bool:
-  case InternalFunctionType::IntBinaryOpt_IntArray__Int:
-  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double:
-  case InternalFunctionType::IntBinaryOpt_IntArray__IntArray:
-  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__DoubleArray:
-    return 2;
-  }
 
-  throw std::runtime_error("Fatal Error: Unexpected internal function type in nrArguments function");
+  return anka::getItemSize<std::vector<T>>(context, words[index].index);
 }
 
-export struct InternalFunction
+template <typename ReturnType, typename... ArgTypes>
+auto createFunctionExecutor(void *funPtr) -> InternalFunctionExecuter
 {
-  void *ptr = nullptr;
-  InternalFunctionType type;
-};
+  typedef ReturnType (*FunType)(ArgTypes...);
+  FunType func = static_cast<FunType>(funPtr);
+
+  auto executor = [&func](anka::Context &context, const std::vector<anka::Word> &words,
+                          const std::vector<bool> &expandArray) -> std::optional<anka::Word> {
+    if constexpr (!anka::isExpandable<ReturnType>())
+    {
+      size_t argIndex = 0;
+      auto args = std::make_tuple(getValue<ArgTypes>(context, words, expandArray, 0, argIndex++)...);
+      if constexpr (std::is_same<ReturnType, void>::value)
+      {
+        std::apply(func, args);
+        return std::nullopt;
+      }
+      else
+      {
+        auto ret = std::apply(func, args);
+        return anka::createWord(context, std::move(ret));
+      }
+    }
+    else
+    {
+      size_t i = 0;
+      auto sizes = std::vector<size_t>{getArgumentSize<ArgTypes>(context, words, expandArray, i++)...};
+      auto max_size = std::ranges::max(sizes);
+
+      if (max_size == 1)
+      {
+        size_t argIndex = 0;
+        auto args = std::make_tuple(getValue<ArgTypes>(context, words, expandArray, 0, argIndex++)...);
+        if constexpr (std::is_same<ReturnType, void>::value)
+        {
+          std::apply(func, args);
+          return std::nullopt;
+        }
+        else
+        {
+          auto ret = std::apply(func, args);
+          return anka::createWord(context, std::move(ret));
+        }
+      }
+
+      if constexpr (std::is_same<ReturnType, void>::value)
+      {
+        for (auto arrIndex = 0; arrIndex < max_size; ++arrIndex)
+        {
+          size_t argIndex = 0;
+          auto args = std::make_tuple(getValue<ArgTypes>(context, words, expandArray, arrIndex, argIndex++)...);
+          std::apply(func, args);
+        }
+        return std::nullopt;
+      }
+      else
+      {
+        std::vector<ReturnType> vec(max_size);
+        for (auto arrIndex = 0; arrIndex < max_size; ++arrIndex)
+        {
+          size_t argIndex = 0;
+          auto args = std::make_tuple(getValue<ArgTypes>(context, words, expandArray, arrIndex, argIndex++)...);
+          vec[arrIndex] = std::apply(func, args);
+        }
+        return anka::createWord(context, std::move(vec));
+      }
+    }
+  };
+
+  return executor;
+}
 
 auto ioata(int n) -> std::vector<int>
 {
@@ -243,16 +283,14 @@ template <typename T> auto to_double(T val) -> double
   return val;
 }
 
-export template <typename R, typename T> using BinaryOpt = R(*)(T, T);
-
-template <typename T, typename R> auto foldl(BinaryOpt<T, R> func, const std::vector<T> &vec) -> R
+template <typename T, typename R> auto foldl(anka::BinaryOpt<T, R> func, const std::vector<T> &vec) -> R
 {
   if (vec.empty())
     return (R)0;
   return std::accumulate(vec.begin() + 1, vec.end(), vec.front(), func);
 }
 
-template <typename T, typename R> auto scanl(BinaryOpt<T, R> func, const std::vector<T> &vec) -> std::vector<R>
+template <typename T, typename R> auto scanl(anka::BinaryOpt<T, R> func, const std::vector<T> &vec) -> std::vector<R>
 {
   if (vec.empty())
     return vec;
@@ -262,72 +300,109 @@ template <typename T, typename R> auto scanl(BinaryOpt<T, R> func, const std::ve
   return res;
 }
 
-export auto getInternalFunctions() -> const std::unordered_map<std::string, std::vector<anka::InternalFunction>> &
+export using InternalFunctionMaptype =
+    std::unordered_map<InternalFunctionDefinition, InternalFunctionExecuter, InternalFunctionDefinitionHash,
+                       InternalFunctionDefinitionEqual>;
+
+template <typename T> anka::WordType getValueWithInternalFunctions()
 {
-  static std::optional<std::unordered_map<std::string, std::vector<anka::InternalFunction>>> functionMapOpt;
+  using Decayed = std::decay<T>::type;
+
+  if constexpr (std::is_same_v<Decayed, anka::BinaryOpt<int, int>>)
+    return anka::WordType::Name;
+  else if constexpr (std::is_same_v<Decayed, anka::BinaryOpt<double, double>>)
+    return anka::WordType::Name;
+  else
+    return anka::getWordType<T>;
+}
+
+template <typename ReturnType, typename... ArgTypes>
+auto addInternalFunction(InternalFunctionMaptype &map, std::string &&name, void *ptr)
+{
+  InternalFunctionDefinition def;
+  def.name = name;
+  def.returnType = anka::getWordType<ReturnType>();
+  def.argumentTypes = std::vector<anka::WordType>{anka::getWordType<ArgTypes>()...};
+
+  map[def] = createFunctionExecutor<ReturnType, ArgTypes...>(ptr);
+}
+
+export auto getInternalFunctions() -> const InternalFunctionMaptype &
+{
+  static std::optional<InternalFunctionMaptype> functionMapOpt;
+
   if (functionMapOpt.has_value())
     return functionMapOpt.value();
 
-  typedef double (*DoubleToDoubleFunc)(double);
+  InternalFunctionMaptype map;
+  addInternalFunction<std::vector<int>, int>(map, "ioata", &anka::inc<int>);
 
-  std::unordered_map<std::string, std::vector<anka::InternalFunction>> map;
-  map["ioata"] = {{&anka::ioata, InternalFunctionType::Int__IntArray}};
-  map["inc"] = {{&anka::inc<int>, InternalFunctionType::Int__Int},
-                {&anka::inc<double>, InternalFunctionType::Double__Double}};
-  map["dec"] = {{&anka::dec<int>, InternalFunctionType::Int__Int},
-                {&anka::dec<double>, InternalFunctionType::Double__Double}};
-  map["neg"] = {{&anka::neg<int>, InternalFunctionType::Int__Int},
-                {&anka::neg<double>, InternalFunctionType::Double__Double}};
-  map["abs"] = {{&anka::abs<int>, InternalFunctionType::Int__Int},
-                {&anka::abs<double>, InternalFunctionType::Double__Double}};
-  map["sqrt"] = {{(DoubleToDoubleFunc)&std::sqrt, InternalFunctionType::Double__Double}};
-  map["exp"] = {{(DoubleToDoubleFunc)&std::exp, InternalFunctionType::Double__Double}};
-  map["log"] = {{(DoubleToDoubleFunc)&std::log, InternalFunctionType::Double__Double}};
-  map["log10"] = {{(DoubleToDoubleFunc)&std::log10, InternalFunctionType::Double__Double}};
-  map["sin"] = {{(DoubleToDoubleFunc)&std::sin, InternalFunctionType::Double__Double}};
-  map["cos"] = {{(DoubleToDoubleFunc)&std::cos, InternalFunctionType::Double__Double}};
-  map["tan"] = {{(DoubleToDoubleFunc)&std::tan, InternalFunctionType::Double__Double}};
-  map["floor"] = {{(DoubleToDoubleFunc)&std::floor, InternalFunctionType::Double__Double}};
-  map["ceil"] = {{(DoubleToDoubleFunc)&std::ceil, InternalFunctionType::Double__Double}};
-  map["trunc"] = {{(DoubleToDoubleFunc)&std::trunc, InternalFunctionType::Double__Double}};
-  map["length"] = {{&anka::length<int>, InternalFunctionType::IntArray__Int},
-                   {&anka::length<double>, InternalFunctionType::DoubleArray__Int},
-                   {&anka::length<bool>, InternalFunctionType::BoolArray__Int}};
-  map["sort"] = {{&anka::sort<int>, InternalFunctionType::IntArray__IntArray},
-                 {&anka::sort<bool>, InternalFunctionType::BoolArray__BoolArray},
-                 {&anka::sort<double>, InternalFunctionType::DoubleArray__DoubleArray}};
-  map["add"] = {{&anka::add<int>, InternalFunctionType::Int_Int__Int},
-                {&anka::add<double>, InternalFunctionType::Double_Double__Double}};
-  map["sub"] = {{&anka::sub<int>, InternalFunctionType::Int_Int__Int},
-                {&anka::sub<double>, InternalFunctionType::Double_Double__Double}};
-  map["mul"] = {{&anka::mul<int>, InternalFunctionType::Int_Int__Int},
-                {&anka::mul<double>, InternalFunctionType::Double_Double__Double}};
-  map["div"] = {{&anka::div<int>, InternalFunctionType::Int_Int__Int},
-                {&anka::div<double>, InternalFunctionType::Double_Double__Double}};
-  map["and"] = {{&anka::andFun, InternalFunctionType::Bool_Bool__Bool}};
-  map["or"] = {{&anka::orFun, InternalFunctionType::Bool_Bool__Bool}};
-  map["equals"] = {{&anka::equals<int>, InternalFunctionType::Int_Int_Bool},
-                   {&anka::equals<double>, InternalFunctionType::Double_Double_Bool},
-                   {&anka::equals<bool>, InternalFunctionType::Bool_Bool__Bool}};
-  map["not_equals"] = {{&anka::notEquals<int>, InternalFunctionType::Int_Int_Bool},
-                       {&anka::notEquals<double>, InternalFunctionType::Double_Double_Bool},
-                       {&anka::notEquals<bool>, InternalFunctionType::Bool_Bool__Bool}};
-  map["not"] = {{&anka::notFun, InternalFunctionType::Bool__Bool}};
-  map["all_of"] = {{&anka::all_of, InternalFunctionType::BoolArray__Bool}};
-  map["any_of"] = {{&anka::any_of, InternalFunctionType::BoolArray__Bool}};
-  map["none_of"] = {{&anka::none_of, InternalFunctionType::BoolArray__Bool}};
-  map["sum"] = {{&anka::sum<int>, InternalFunctionType::IntArray__Int},
-                {&anka::sum<double>, InternalFunctionType::DoubleArray__Double}};
-  map["to_double"] = {{&anka::to_double<int>, InternalFunctionType::Int__Double},
-                      {&anka::to_double<double>, InternalFunctionType::Double__Double}};
-  map["foldl"] = {
-      {&anka::foldl<int, int>, InternalFunctionType::IntBinaryOpt_IntArray__Int},
-      {&anka::foldl<double, double>, InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double},
-  };
-  map["scanl"] = {
-      {&anka::scanl<int, int>, InternalFunctionType::IntBinaryOpt_IntArray__IntArray},
-      {&anka::scanl<double, double>, InternalFunctionType::DoubleBinaryOpt_DoubleArray__DoubleArray},
-  };
+  addInternalFunction<int, int>(map, "inc", &anka::inc<int>);
+  addInternalFunction<double, double>(map, "inc", &anka::inc<double>);
+  addInternalFunction<int, int>(map, "dec", &anka::dec<int>);
+  addInternalFunction<double, double>(map, "dec", &anka::dec<double>);
+  addInternalFunction<int, int>(map, "neg", &anka::neg<int>);
+  addInternalFunction<double, double>(map, "neg", &anka::neg<double>);
+  addInternalFunction<int, int>(map, "abs", &anka::abs<int>);
+  addInternalFunction<double, double>(map, "abs", &anka::abs<double>);
+
+  typedef double (*DoubleToDoubleFunc)(double);
+  addInternalFunction<double, double>(map, "sqrt", static_cast<DoubleToDoubleFunc>(&std::sqrt));
+  addInternalFunction<double, double>(map, "exp", static_cast<DoubleToDoubleFunc>(&std::exp));
+  addInternalFunction<double, double>(map, "log", static_cast<DoubleToDoubleFunc>(&std::log));
+  addInternalFunction<double, double>(map, "log10", static_cast<DoubleToDoubleFunc>(&std::log10));
+  addInternalFunction<double, double>(map, "sin", static_cast<DoubleToDoubleFunc>(&std::sin));
+  addInternalFunction<double, double>(map, "cos", static_cast<DoubleToDoubleFunc>(&std::cos));
+  addInternalFunction<double, double>(map, "tan", static_cast<DoubleToDoubleFunc>(&std::tan));
+  addInternalFunction<double, double>(map, "floor", static_cast<DoubleToDoubleFunc>(&std::floor));
+  addInternalFunction<double, double>(map, "ceil", static_cast<DoubleToDoubleFunc>(&std::ceil));
+  addInternalFunction<double, double>(map, "trunc", static_cast<DoubleToDoubleFunc>(&std::trunc));
+
+  addInternalFunction<int, std::vector<int>>(map, "length", &anka::length<int>);
+  addInternalFunction<int, std::vector<double>>(map, "length", &anka::length<double>);
+  addInternalFunction<int, std::vector<bool>>(map, "length", &anka::length<bool>);
+
+  addInternalFunction<std::vector<int>, std::vector<int>>(map, "sort", &anka::sort<int>);
+  addInternalFunction<std::vector<double>, std::vector<double>>(map, "sort", &anka::sort<double>);
+  addInternalFunction<std::vector<bool>, std::vector<bool>>(map, "sort", &anka::sort<bool>);
+
+  addInternalFunction<int, int, int>(map, "add", &anka::add<int>);
+  addInternalFunction<double, double, double>(map, "add", &anka::add<double>);
+  addInternalFunction<int, int, int>(map, "sub", &anka::sub<int>);
+  addInternalFunction<double, double, double>(map, "sub", &anka::sub<double>);
+  addInternalFunction<int, int, int>(map, "mul", &anka::mul<int>);
+  addInternalFunction<double, double, double>(map, "mul", &anka::mul<double>);
+  addInternalFunction<int, int, int>(map, "div", &anka::div<int>);
+  addInternalFunction<double, double, double>(map, "div", &anka::div<double>);
+
+  addInternalFunction<bool, bool, bool>(map, "and", &anka::andFun);
+  addInternalFunction<bool, bool, bool>(map, "or", &anka::orFun);
+
+  addInternalFunction<bool, bool, bool>(map, "equals", &anka::equals<bool>);
+  addInternalFunction<bool, int, int>(map, "equals", &anka::equals<int>);
+  addInternalFunction<bool, double, double>(map, "equals", &anka::equals<double>);
+  addInternalFunction<bool, bool, bool>(map, "not_equals", &anka::notEquals<bool>);
+  addInternalFunction<bool, int, int>(map, "not_equals", &anka::notEquals<int>);
+  addInternalFunction<bool, double, double>(map, "not_equals", &anka::notEquals<double>);
+
+  addInternalFunction<bool, bool>(map, "not", &anka::notFun);
+  addInternalFunction<bool, std::vector<bool>>(map, "all_of", &anka::all_of);
+  addInternalFunction<bool, std::vector<bool>>(map, "any_of", &anka::any_of);
+  addInternalFunction<bool, std::vector<bool>>(map, "none_of", &anka::none_of);
+
+  addInternalFunction<int, std::vector<int>>(map, "sum", &anka::sum<int>);
+  addInternalFunction<double, std::vector<double>>(map, "sum", &anka::sum<double>);
+
+  addInternalFunction<int, double>(map, "to_double", &anka::to_double<int>);
+  addInternalFunction<double, double>(map, "to_double", &anka::to_double<double>);
+
+  // addInternalFunction<int, anka::BinaryOpt<int, int>, std::vector<int>>(map, "foldl", &anka::foldl<int, int>);
+  // addInternalFunction<double, anka::BinaryOpt<double, double>, std::vector<double>>(map, "foldl",
+  //                                                                                   &anka::foldl<double, double>);
+
+  // addInternalFunction<int, anka::BinaryOpt<int, int>, std::vector<int>>(map, "scanl", &anka::scanl<int, int>);
+  // addInternalFunction<double, anka::BinaryOpt<double, double>, std::vector<double>>(map, "scanl",
+  //                                                                                   &anka::scanl<double, double>);
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();
@@ -363,45 +438,13 @@ export template <typename T> auto getInternalConstants() -> const std::unordered
   ();
 }
 
-export enum class InternalFunctionCategory
+export auto getInternalFunctionDefinitionsWithName(const std::string &name) -> std::vector<InternalFunctionDefinition>
 {
-  BinaryOptInteger__Integer,
-  BinaryOptDouble__Double,
-  Uncategorized
-};
+  auto kv = ranges::views::keys(getInternalFunctions());
+  std::vector<anka::InternalFunctionDefinition> definitions{kv.begin(), kv.end()};
 
-export auto getCategory(anka::InternalFunctionType type) -> InternalFunctionCategory
-{
-  switch (type)
-  {
-  case InternalFunctionType::Int_Int__Int:
-    return InternalFunctionCategory::BinaryOptInteger__Integer;
-  case InternalFunctionType::Double_Double__Double:
-    return InternalFunctionCategory::BinaryOptDouble__Double;
-  case InternalFunctionType::Int__IntArray:
-  case InternalFunctionType::Int__Int:
-  case InternalFunctionType::Int__Double:
-  case InternalFunctionType::IntArray__Int:
-  case InternalFunctionType::IntArray__IntArray:
-  case InternalFunctionType::Double__Double:
-  case InternalFunctionType::DoubleArray__Int:
-  case InternalFunctionType::DoubleArray__Double:
-  case InternalFunctionType::DoubleArray__DoubleArray:
-  case InternalFunctionType::Bool__Bool:
-  case InternalFunctionType::BoolArray__Int:
-  case InternalFunctionType::BoolArray__Bool:
-  case InternalFunctionType::BoolArray__BoolArray:
-  case InternalFunctionType::Int_Int_Bool:
-  case InternalFunctionType::Bool_Bool__Bool:
-  case InternalFunctionType::Double_Double_Bool:
-  case InternalFunctionType::IntBinaryOpt_IntArray__Int:
-  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__Double:
-  case InternalFunctionType::IntBinaryOpt_IntArray__IntArray:
-  case InternalFunctionType::DoubleBinaryOpt_DoubleArray__DoubleArray:
-    return InternalFunctionCategory::Uncategorized;
-  };
-
-  throw std::runtime_error("Fatal Error: Unexpected internal function type in getCategory function");
+  return definitions | ranges::views::filter([&name](const auto &def) { return def.name == name; }) |
+         ranges::to<std::vector<InternalFunctionDefinition>>;
 }
 
 } // namespace anka
