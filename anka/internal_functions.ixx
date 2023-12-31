@@ -103,7 +103,7 @@ auto createFunctionExecutor(void *funPtr) -> InternalFunctionExecuter
   typedef ReturnType (*FunType)(ArgTypes...);
   FunType func = static_cast<FunType>(funPtr);
 
-  auto executor = [&func](anka::Context &context, const std::vector<anka::Word> &words,
+  auto executor = [func](anka::Context &context, const std::vector<anka::Word> &words,
                           const std::vector<bool> &expandArray) -> std::optional<anka::Word> {
     if constexpr (!anka::isExpandable<ReturnType>())
     {
@@ -335,7 +335,7 @@ export auto getInternalFunctions() -> const InternalFunctionMaptype &
     return functionMapOpt.value();
 
   InternalFunctionMaptype map;
-  addInternalFunction<std::vector<int>, int>(map, "ioata", &anka::inc<int>);
+  addInternalFunction<std::vector<int>, int>(map, "ioata", &anka::ioata);
 
   addInternalFunction<int, int>(map, "inc", &anka::inc<int>);
   addInternalFunction<double, double>(map, "inc", &anka::inc<double>);

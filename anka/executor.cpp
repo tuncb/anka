@@ -220,16 +220,9 @@ auto foldExecutor(anka::Context &context, const anka::Word &w1, const anka::Word
   return createWord(context, Tuple{res, false});
 }
 
-auto foldFunction(anka::Context &context, const ExecutionInformation &info)
-    -> std::optional<anka::Word>
+auto foldFunction(anka::Context &context, const ExecutionInformation &info) -> std::optional<anka::Word>
 {
-  if (std::none_of(info.interpretation.expandArray.begin(), info.interpretation.expandArray.end(),
-                   std::logical_not<bool>()))
-  {
-    return info.executer(context, info.allWords, info.interpretation.expandArray);
-  }
-
-  return std::nullopt;
+  return info.executer(context, info.allWords, info.interpretation.expandArray);
 }
 
 auto checkIfNameIsAvailable(anka::Context &context, const std::string &name) -> bool
