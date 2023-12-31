@@ -23,6 +23,136 @@ import :errors;
 
 namespace anka
 {
+  auto ioata(int n) -> std::vector<int>
+{
+  std::vector<int> res;
+  if (n < 1)
+    return res;
+
+  res.reserve(n);
+  for (auto i = 0; i < n; ++i)
+  {
+    res.push_back(i + 1);
+  }
+  return res;
+}
+
+template <typename T> auto inc(T n) -> T
+{
+  return n + (T)1;
+}
+
+template <typename T> auto dec(T n) -> T
+{
+  return n - (T)1;
+}
+
+template <typename T> auto neg(T n) -> T
+{
+  return -n;
+}
+template <typename T> auto abs(T n) -> T
+{
+  return std::abs(n);
+}
+
+template <typename T> auto length(const std::vector<T> &vec) -> int
+{
+  return static_cast<int>(vec.size());
+}
+
+template <typename T> auto sort(const std::vector<T> &vec) -> std::vector<T>
+{
+  auto res = vec;
+  std::sort(res.begin(), res.end());
+  return res;
+}
+
+template <typename T> auto add(T v1, T v2) -> T
+{
+  return v1 + v2;
+}
+
+template <typename T> auto sub(T v1, T v2) -> T
+{
+  return v1 - v2;
+}
+
+template <typename T> auto mul(T v1, T v2) -> T
+{
+  return v1 * v2;
+}
+template <typename T> auto div(T v1, T v2) -> T
+{
+  return v1 / v2;
+}
+
+auto andFun(bool b1, bool b2) -> bool
+{
+  return b1 and b2;
+}
+
+auto orFun(bool b1, bool b2) -> bool
+{
+  return b1 or b2;
+}
+
+auto notFun(bool b) -> bool
+{
+  return !b;
+}
+
+template <typename T> auto equals(T v1, T v2) -> bool
+{
+  return v1 == v2;
+}
+
+template <typename T> auto notEquals(T v1, T v2) -> bool
+{
+  return v1 != v2;
+}
+
+template <typename T> auto sum(const std::vector<T> &vec) -> T
+{
+  return std::accumulate(vec.begin(), vec.end(), (T)0);
+}
+
+auto all_of(const std::vector<bool> &vec) -> bool
+{
+  return std::all_of(vec.begin(), vec.end(), std::identity());
+}
+
+auto any_of(const std::vector<bool> &vec) -> bool
+{
+  return std::any_of(vec.begin(), vec.end(), std::identity());
+}
+
+auto none_of(const std::vector<bool> &vec) -> bool
+{
+  return std::none_of(vec.begin(), vec.end(), std::identity());
+}
+
+template <typename T> auto to_double(T val) -> double
+{
+  return val;
+}
+
+template <typename T, typename R> auto foldl(anka::BinaryOpt<T, R> func, const std::vector<T> &vec) -> R
+{
+  if (vec.empty())
+    return (R)0;
+  return std::accumulate(vec.begin() + 1, vec.end(), vec.front(), func);
+}
+
+template <typename T, typename R> auto scanl(anka::BinaryOpt<T, R> func, const std::vector<T> &vec) -> std::vector<R>
+{
+  if (vec.empty())
+    return vec;
+  std::vector<R> res;
+  res.resize(vec.size());
+  std::partial_sum(vec.begin(), vec.end(), res.begin(), func);
+  return res;
+}
 
 export using InternalFunctionExecuter = std::function<std::optional<anka::Word>(
     anka::Context &, const std::vector<anka::Word> &, const std::vector<bool> &expandArray)>;
@@ -198,137 +328,6 @@ auto createFunctionExecutor(void *funPtr) -> InternalFunctionExecuter
   };
 
   return executor;
-}
-
-auto ioata(int n) -> std::vector<int>
-{
-  std::vector<int> res;
-  if (n < 1)
-    return res;
-
-  res.reserve(n);
-  for (auto i = 0; i < n; ++i)
-  {
-    res.push_back(i + 1);
-  }
-  return res;
-}
-
-template <typename T> auto inc(T n) -> T
-{
-  return n + (T)1;
-}
-
-template <typename T> auto dec(T n) -> T
-{
-  return n - (T)1;
-}
-
-template <typename T> auto neg(T n) -> T
-{
-  return -n;
-}
-template <typename T> auto abs(T n) -> T
-{
-  return std::abs(n);
-}
-
-template <typename T> auto length(const std::vector<T> &vec) -> int
-{
-  return static_cast<int>(vec.size());
-}
-
-template <typename T> auto sort(const std::vector<T> &vec) -> std::vector<T>
-{
-  auto res = vec;
-  std::sort(res.begin(), res.end());
-  return res;
-}
-
-template <typename T> auto add(T v1, T v2) -> T
-{
-  return v1 + v2;
-}
-
-template <typename T> auto sub(T v1, T v2) -> T
-{
-  return v1 - v2;
-}
-
-template <typename T> auto mul(T v1, T v2) -> T
-{
-  return v1 * v2;
-}
-template <typename T> auto div(T v1, T v2) -> T
-{
-  return v1 / v2;
-}
-
-auto andFun(bool b1, bool b2) -> bool
-{
-  return b1 and b2;
-}
-
-auto orFun(bool b1, bool b2) -> bool
-{
-  return b1 or b2;
-}
-
-auto notFun(bool b) -> bool
-{
-  return !b;
-}
-
-template <typename T> auto equals(T v1, T v2) -> bool
-{
-  return v1 == v2;
-}
-
-template <typename T> auto notEquals(T v1, T v2) -> bool
-{
-  return v1 != v2;
-}
-
-template <typename T> auto sum(const std::vector<T> &vec) -> T
-{
-  return std::accumulate(vec.begin(), vec.end(), (T)0);
-}
-
-auto all_of(const std::vector<bool> &vec) -> bool
-{
-  return std::all_of(vec.begin(), vec.end(), std::identity());
-}
-
-auto any_of(const std::vector<bool> &vec) -> bool
-{
-  return std::any_of(vec.begin(), vec.end(), std::identity());
-}
-
-auto none_of(const std::vector<bool> &vec) -> bool
-{
-  return std::none_of(vec.begin(), vec.end(), std::identity());
-}
-
-template <typename T> auto to_double(T val) -> double
-{
-  return val;
-}
-
-template <typename T, typename R> auto foldl(anka::BinaryOpt<T, R> func, const std::vector<T> &vec) -> R
-{
-  if (vec.empty())
-    return (R)0;
-  return std::accumulate(vec.begin() + 1, vec.end(), vec.front(), func);
-}
-
-template <typename T, typename R> auto scanl(anka::BinaryOpt<T, R> func, const std::vector<T> &vec) -> std::vector<R>
-{
-  if (vec.empty())
-    return vec;
-  std::vector<R> res;
-  res.resize(vec.size());
-  std::partial_sum(vec.begin(), vec.end(), res.begin(), func);
-  return res;
 }
 
 export using InternalFunctionMaptype =
