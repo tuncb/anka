@@ -33,6 +33,18 @@ struct Interpretation
   std::vector<bool> expandArray;
 };
 
+template <typename Fun>
+auto addInterpretation(std::vector<Interpretation> &allPossibilities, Fun fun)
+{
+  std::vector<Interpretation> newOnes;
+  for (auto possibility : allPossibilities)
+  {
+    auto newPossibility = fun(possibility);
+    newOnes.push_back(newPossibility);
+  }
+  allPossibilities.insert(allPossibilities.end(), newOnes.begin(), newOnes.end());
+}
+
 auto getAllInterpretations(const std::vector<anka::WordType> &wordTypes) -> std::vector<Interpretation>
 {
   std::vector<Interpretation> allPossibilities;
@@ -43,17 +55,21 @@ auto getAllInterpretations(const std::vector<anka::WordType> &wordTypes) -> std:
     const auto itemType = getArrayItemType(type);
     if (itemType)
     {
-      std::vector<Interpretation> newOnes;
-
-      for (auto possibility : allPossibilities)
-      {
+      addInterpretation(allPossibilities, [i, &itemType](const Interpretation& possibility) {
         auto newPossibility = possibility;
         newPossibility.arguments[i] = itemType.value();
         newPossibility.expandArray[i] = true;
-        newOnes.push_back(newPossibility);
-      }
+        return newPossibility;
+      });
+    }
 
-      allPossibilities.insert(allPossibilities.end(), newOnes.begin(), newOnes.end());
+    if (type == anka::WordType::IntegerNumber)
+    {
+      addInterpretation(allPossibilities, [i, &itemType](const Interpretation &possibility) {
+        auto newPossibility = possibility;
+        newPossibility.arguments[i] = anka::WordType::DoubleNumber;
+        return newPossibility;
+      });
     }
   }
 
@@ -84,10 +100,10 @@ auto findOverload(const anka::Context &context, const std::string &name, const a
     if (iter != internalFunctions.end())
     {
       auto isExpanding = std::ranges::any_of(interpretation.expandArray, [](bool v) { return v; });
-      
+
       // we don't support array of arrays
       if (isExpanding && !anka::isExpandable(iter->first.returnType))
-          continue;
+        continue;
 
       return ExecutionInformation{iter->second, interpretation, allWords};
     }

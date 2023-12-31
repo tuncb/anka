@@ -66,6 +66,24 @@ export auto toString(InternalFunctionDefinition definition) -> std::string
 }
 
 template <typename T>
+auto getValueWithConversion(anka::Context &context, anka::Word word) -> ValueReturnType<T>::ReturnType
+{
+  if constexpr (std::is_same_v<T, double>)
+  {
+    if (word.type == WordType::IntegerNumber)
+    {
+      auto iVal = anka::getValue<int>(context, word.index);
+      return static_cast<T>(iVal);
+    }
+    return anka::getValue<T>(context, word.index);
+  }
+  else
+  {
+    return anka::getValue<T>(context, word.index);
+  }
+}
+
+template <typename T>
 auto getValue(anka::Context &context, const std::vector<anka::Word> &words, const std::vector<bool> &expandArray,
               size_t arrIndex, size_t index) -> ValueReturnType<T>::ReturnType
 {
@@ -85,11 +103,11 @@ auto getValue(anka::Context &context, const std::vector<anka::Word> &words, cons
       return vec[arrIndex];
     }
 
-    return anka::getValue<T>(context, word.index);
+    return anka::getValueWithConversion<T>(context, word);
   }
   else
   {
-    return anka::getValue<T>(context, word.index);
+    return anka::getValueWithConversion<T>(context, word);
   }
 }
 
