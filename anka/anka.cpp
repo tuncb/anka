@@ -24,7 +24,7 @@ import utility;
 
 const auto constexpr MAJOR_VERSION = "0";
 const auto constexpr MINOR_VERSION = "2";
-const auto constexpr PATCH_VERSION = "0";
+const auto constexpr PATCH_VERSION = "1";
 
 auto execute(anka::Context &context, const std::string_view content) -> bool
 {
