@@ -29,12 +29,11 @@ auto getArrayItemType(anka::WordType arrType) -> std::optional<anka::WordType>
 
 struct Interpretation
 {
-  std::vector<anka::WordType> arguments;
+  std::vector<anka::TypeVariant> arguments;
   std::vector<bool> expandArray;
 };
 
-template <typename Fun>
-auto addInterpretation(std::vector<Interpretation> &allPossibilities, Fun fun)
+template <typename Fun> auto addInterpretation(std::vector<Interpretation> &allPossibilities, Fun fun)
 {
   std::vector<Interpretation> newOnes;
   for (auto possibility : allPossibilities)
@@ -45,19 +44,25 @@ auto addInterpretation(std::vector<Interpretation> &allPossibilities, Fun fun)
   allPossibilities.insert(allPossibilities.end(), newOnes.begin(), newOnes.end());
 }
 
+auto toType(const std::vector<anka::WordType> &wtype) -> std::vector<anka::TypeVariant>
+{
+  return wtype | ranges::views::transform([](const auto w) { return anka::toType(w); }) |
+         ranges::to<std::vector<anka::TypeVariant>>;
+}
+
 auto getAllInterpretations(const std::vector<anka::WordType> &wordTypes) -> std::vector<Interpretation>
 {
   std::vector<Interpretation> allPossibilities;
-  allPossibilities.push_back({wordTypes, std::vector<bool>(wordTypes.size())});
+  allPossibilities.push_back({toType(wordTypes), std::vector<bool>(wordTypes.size())});
 
   for (auto [i, type] : ranges::views::enumerate(wordTypes))
   {
     const auto itemType = getArrayItemType(type);
     if (itemType)
     {
-      addInterpretation(allPossibilities, [i, &itemType](const Interpretation& possibility) {
+      addInterpretation(allPossibilities, [i, &itemType](const Interpretation &possibility) {
         auto newPossibility = possibility;
-        newPossibility.arguments[i] = itemType.value();
+        newPossibility.arguments[i] = anka::toType(itemType.value());
         newPossibility.expandArray[i] = true;
         return newPossibility;
       });
@@ -67,7 +72,7 @@ auto getAllInterpretations(const std::vector<anka::WordType> &wordTypes) -> std:
     {
       addInterpretation(allPossibilities, [i, &itemType](const Interpretation &possibility) {
         auto newPossibility = possibility;
-        newPossibility.arguments[i] = anka::WordType::DoubleNumber;
+        newPossibility.arguments[i] = anka::toType(anka::WordType::DoubleNumber);
         return newPossibility;
       });
     }
@@ -115,7 +120,7 @@ auto findOverload(const anka::Context &context, const std::string &name, const a
   for (auto interpretation : interpretations)
   {
     // anka::WordType::Name is a dummy => fix this!!!, do we really need the result type in the definition?
-    const auto definition = anka::InternalFunctionDefinition{name, interpretation.arguments, anka::WordType::Name};
+    const auto definition = anka::InternalFunctionDefinition{name, interpretation.arguments, anka::TypeFamily::Void};
     auto iter = internalFunctions.find(definition);
     if (iter != internalFunctions.end())
     {

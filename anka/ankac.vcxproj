@@ -259,6 +259,7 @@
     <ClCompile Include="internal_functions.ixx" />
     <ClCompile Include="tokenizer.cpp" />
     <ClCompile Include="tokenizer_tests.cpp" />
+    <ClCompile Include="type_system.ixx" />
     <ClCompile Include="utility.ixx" />
   </ItemGroup>
   <ItemGroup>

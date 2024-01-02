@@ -169,19 +169,6 @@ template <typename T> constexpr auto isExpandable() -> bool
     return false;
 }
 
-inline auto isExpandable(WordType type) -> bool
-{
-  switch (type)
-  {
-  case WordType::Boolean:
-  case WordType::IntegerNumber:
-  case WordType::DoubleNumber:
-    return true;
-  default:
-    return false;
-  }
-}
-
 auto parseAST(const std::string_view content, std::span<Token> tokens, Context &context) -> std::vector<Sentence>;
 
 auto toString(const anka::Context &context, const anka::Word &word) -> std::string;

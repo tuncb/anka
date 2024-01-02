@@ -20,6 +20,7 @@ module;
 export module anka:internal_functions;
 
 import :errors;
+import :type_system;
 
 namespace anka
 {
@@ -160,22 +161,15 @@ export using InternalFunctionExecuter = std::function<std::optional<anka::Word>(
 export struct InternalFunctionDefinition
 {
   std::string name;
-  std::vector<anka::WordType> argumentTypes;
-  anka::WordType returnType;
+  TypeList argumentTypes;
+  TypeVariant returnType;
 };
 
 export struct InternalFunctionDefinitionHash
 {
   inline size_t operator()(const InternalFunctionDefinition &k) const
   {
-    auto customHash = std::hash<std::string>()(k.name);
-
-    for (auto wordType : k.argumentTypes)
-    {
-      customHash = customHash ^ std::hash<int>()(static_cast<int>(wordType));
-    }
-
-    return customHash;
+    return std::hash<std::string>()(k.name) ^ anka::hash(k.argumentTypes);
   }
 };
 
@@ -189,10 +183,9 @@ export struct InternalFunctionDefinitionEqual
 
 export auto toString(InternalFunctionDefinition definition) -> std::string
 {
-  std::vector<std::string> argText = definition.argumentTypes |
-                                     ranges::views::transform([](anka::WordType w) { return anka::toString(w); }) |
-                                     ranges::to<std::vector>();
-  return fmt::format("[{}] -> {}", fmt::join(argText, ", "), anka::toString(definition.returnType));
+  auto argText = anka::toString(definition.argumentTypes);
+
+  return fmt::format("[{}] -> {}", fmt::join(argText, ", "), anka::toString({definition.returnType}));
 }
 
 template <typename T>
@@ -351,8 +344,8 @@ auto addInternalFunction(InternalFunctionMaptype &map, std::string &&name, void 
 {
   InternalFunctionDefinition def;
   def.name = name;
-  def.returnType = anka::getWordType<ReturnType>();
-  def.argumentTypes = std::vector<anka::WordType>{anka::getWordType<ArgTypes>()...};
+  def.returnType = anka::getType<ReturnType>();
+  def.argumentTypes = std::vector<anka::TypeVariant>{anka::getType<ArgTypes>()...};
 
   map[def] = createFunctionExecutor<ReturnType, ArgTypes...>(ptr);
 }
@@ -475,6 +468,29 @@ export auto getInternalFunctionDefinitionsWithName(const std::string &name) -> s
 
   return definitions | ranges::views::filter([&name](const auto &def) { return def.name == name; }) |
          ranges::to<std::vector<InternalFunctionDefinition>>;
+}
+
+export auto toType(WordType wtype) -> TypeVariant
+{
+  switch (wtype)
+  {
+  case WordType::IntegerNumber:
+    return TypeFamily::Int;
+  case WordType::IntegerArray:
+    return TypeFamily::IntArray;
+  case WordType::DoubleNumber:
+    return TypeFamily::Double;
+  case WordType::DoubleArray:
+    return TypeFamily::DoubleArray;
+  case WordType::Boolean:
+    return TypeFamily::Bool;
+  case WordType::BooleanArray:
+    return TypeFamily::BoolArray;
+  case WordType::Name:
+    return TypeFamily::Void; // return function variant here
+  default:
+    throw anka::ExecutionError{std::nullopt, std::nullopt, "Could not understant WordType"};
+  }
 }
 
 } // namespace anka
