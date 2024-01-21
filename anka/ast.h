@@ -87,6 +87,7 @@ struct Context
 };
 
 template <typename R, typename T> using BinaryOpt = R (*)(T, T);
+template <typename T> using FilterFunc = bool (*)(T);
 
 template <typename T>
 struct ValueReturnType

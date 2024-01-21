@@ -148,4 +148,10 @@ TEST_CASE("binaryOptAlgorithms")
   CHECK_EQ(executeText("scanl[add] (1 2 3 4 5 6)"), "(1 3 6 10 15 21)");
   CHECK_EQ(executeText("scanl[add] (1.0 1.5 2.0)"), "(1.0 2.5 4.5)");
 }
+
+TEST_CASE("binaryOptAlgorithms")
+{
+  CHECK_EQ(executeText("filter[not] (true true false)"), "(false)");
+  CHECK_EQ(executeText("filter[odd] (1 2 3 4 5)"), "(1 3 5)");
+}
 #endif

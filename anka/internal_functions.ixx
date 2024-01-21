@@ -49,6 +49,26 @@ template <typename T> auto dec(T n) -> T
   return n - (T)1;
 }
 
+auto odd(int n) -> bool
+{
+  return n % 2 == 1;
+}
+
+auto even(int n) -> bool
+{
+  return n % 2 == 0;
+}
+
+template <typename T> auto is_positive(T n) -> bool
+{
+  return n > 0;
+}
+
+template <typename T> auto is_negative(T n) -> bool
+{
+  return n < 0;
+}
+
 template <typename T> auto neg(T n) -> T
 {
   return -n;
@@ -154,6 +174,17 @@ template <typename T, typename R> auto scanl(anka::BinaryOpt<T, R> func, const s
   res.resize(vec.size());
   std::partial_sum(vec.begin(), vec.end(), res.begin(), func);
   return res;
+}
+
+template <typename T> auto filter(anka::FilterFunc<T> func, const std::vector<T> &vec) -> std::vector<T>
+{
+  std::vector<T> ret;
+  if (vec.empty())
+    return ret;
+
+  std::copy_if(vec.begin(), vec.end(), std::back_inserter(ret), func);
+
+  return ret;
 }
 
 export using InternalFunctionExecuter = std::function<std::optional<anka::Word>(
@@ -390,6 +421,13 @@ export auto getInternalFunctions() -> const InternalFunctionMaptype &
   InternalFunctionMaptype map;
   addInternalFunction<std::vector<int>, int>(map, "ioata", &anka::ioata);
 
+  addInternalFunction<bool, int>(map, "odd", &anka::odd);
+  addInternalFunction<bool, int>(map, "even", &anka::even);
+  addInternalFunction<bool, int>(map, "is_positive", &anka::is_positive<int>);
+  addInternalFunction<bool, double>(map, "is_positive", &anka::is_positive<double>);
+  addInternalFunction<bool, int>(map, "is_negative", &anka::is_negative<int>);
+  addInternalFunction<bool, double>(map, "is_negative", &anka::is_negative<double>);
+
   addInternalFunction<int, int>(map, "inc", &anka::inc<int>);
   addInternalFunction<double, double>(map, "inc", &anka::inc<double>);
   addInternalFunction<int, int>(map, "dec", &anka::dec<int>);
@@ -460,6 +498,11 @@ export auto getInternalFunctions() -> const InternalFunctionMaptype &
                                                                                      &anka::scanl<int, int>);
   addInternalFunction<std::vector<double>, anka::BinaryOpt<double, double>, std::vector<double>>(
       map, "scanl", &anka::scanl<double, double>);
+
+  addInternalFunction<std::vector<bool>, anka::FilterFunc<bool>, std::vector<bool>>(map, "filter", &anka::filter<bool>);
+  addInternalFunction<std::vector<int>, anka::FilterFunc<int>, std::vector<int>>(map, "filter", &anka::filter<int>);
+  addInternalFunction<std::vector<double>, anka::FilterFunc<double>, std::vector<double>>(map, "filter",
+                                                                                          &anka::filter<double>);
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();
