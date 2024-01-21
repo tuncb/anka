@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <format>
 #include <numeric>
+#include <variant>
 
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view.hpp>
@@ -50,8 +51,22 @@ auto toType(const std::vector<anka::WordType> &wtype) -> std::vector<anka::TypeV
          ranges::to<std::vector<anka::TypeVariant>>;
 }
 
-auto getAllInterpretations(const std::vector<anka::WordType> &wordTypes) -> std::vector<Interpretation>
+auto toFunction(const anka::InternalFunctionDefinition &def) -> anka::FunctionType
 {
+  anka::FunctionType ret;
+  ret.returnType = anka::TypeFamily::Void;
+  for (auto t : def.argumentTypes)
+  {
+    ret.arguments.push_back(std::get<anka::TypeFamily>(t));
+  }
+  return ret;
+}
+
+auto getAllInterpretations(const anka::Context &context, const std::vector<anka::Word> &words)
+    -> std::vector<Interpretation>
+{
+  const auto wordTypes = anka::getWordTypes(words);
+
   std::vector<Interpretation> allPossibilities;
   allPossibilities.push_back({toType(wordTypes), std::vector<bool>(wordTypes.size())});
 
@@ -75,6 +90,21 @@ auto getAllInterpretations(const std::vector<anka::WordType> &wordTypes) -> std:
         newPossibility.arguments[i] = anka::toType(anka::WordType::DoubleNumber);
         return newPossibility;
       });
+    }
+    else if (type == anka::WordType::Name)
+    {
+      auto word = words[i];
+      auto name = anka::getValue<std::string>(context, word.index);
+      auto allInternalFunctionWithName = anka::getInternalFunctionDefinitionsWithName(name);
+      for (auto &def : allInternalFunctionWithName)
+      {
+        addInterpretation(allPossibilities, [i, &itemType, &def](const Interpretation &possibility) {
+          auto newPossibility = possibility;
+          auto func = toFunction(def);
+          newPossibility.arguments[i] = func;
+          return newPossibility;
+        });
+      }
     }
   }
 
@@ -113,14 +143,14 @@ auto findOverload(const anka::Context &context, const std::string &name, const a
 {
   const auto &internalFunctions = anka::getInternalFunctions();
   const auto allWords = replaceUserDefinedNames(context, anka::getAllWords(context, word));
-  const auto wordTypes = anka::getWordTypes(allWords);
 
-  const auto interpretations = getAllInterpretations(wordTypes);
+  const auto interpretations = getAllInterpretations(context, allWords);
 
   for (auto interpretation : interpretations)
   {
     // anka::WordType::Name is a dummy => fix this!!!, do we really need the result type in the definition?
-    const auto definition = anka::InternalFunctionDefinition{name, interpretation.arguments, anka::TypeFamily::Void};
+    const auto definition =
+        anka::InternalFunctionDefinition{name, interpretation.arguments, anka::TypeFamily::Void, nullptr};
     auto iter = internalFunctions.find(definition);
     if (iter != internalFunctions.end())
     {

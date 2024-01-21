@@ -38,6 +38,11 @@ export struct FunctionType
 {
   TypeFamily returnType;
   std::vector<TypeFamily> arguments;
+
+  bool operator==(const FunctionType &rhs) const
+  {
+    return arguments == rhs.arguments;
+  }
 };
 
 export using TypeVariant = std::variant<TypeFamily, FunctionType>;
@@ -77,7 +82,7 @@ struct TypeHasher
 
   inline auto operator()(const FunctionType funcType) const -> size_t
   {
-    auto ret = (*this)(funcType.returnType);
+    auto ret = funcType.arguments.size();
     for (auto type : funcType.arguments)
     {
       ret = ret ^ (*this)(type);
@@ -135,7 +140,7 @@ export auto hash(const TypeList &types) -> size_t
   return ret;
 }
 
-export auto toString(const TypeList &types) -> std::string
+export auto toString(const TypeList &types) -> std::vector<std::string>
 {
   TypeStringConvertor conv;
 
@@ -143,18 +148,18 @@ export auto toString(const TypeList &types) -> std::string
       types | ranges::views::transform([conv](const TypeVariant &v) { return std::visit(conv, v); }) |
       ranges::to<std::vector>();
 
-  return fmt::format("[{}]", argText);
+  return argText;
 }
 
 export template <typename T1, typename T2>
 concept IsSameType = std::is_same_v<typename std::remove_cv<typename std::remove_reference<T1>::type>::type, T2>;
 
 export template <typename T>
-concept IsTypeFamilCompatible =
+concept IsTypeFamilyCompatible =
     IsSameType<T, int> || IsSameType<T, double> || IsSameType<T, bool> || IsSameType<T, std::vector<bool>> ||
     IsSameType<T, std::vector<int>> || IsSameType<T, std::vector<double>>;
 
-template <IsTypeFamilCompatible T> auto getFamilyType() -> TypeFamily
+template <IsTypeFamilyCompatible T> auto getFamilyType() -> TypeFamily
 {
   using Decayed = std::remove_cv<typename std::remove_reference<T>::type>::type;
 
@@ -178,7 +183,7 @@ template <IsTypeFamilCompatible T> auto getFamilyType() -> TypeFamily
   ();
 }
 
-template <IsTypeFamilCompatible T> auto getValueType() -> TypeVariant
+template <IsTypeFamilyCompatible T> auto getValueType() -> TypeVariant
 {
   auto f = getFamilyType<T>();
   return f;
@@ -195,9 +200,10 @@ template <typename ReturnType, typename... Args> auto getFunctionType(std::funct
 
 export template <typename T> auto getType() -> TypeVariant
 {
-  if constexpr (std::is_function_v<T>)
+  using FuncType = std::remove_pointer<T>::type;
+  if constexpr (std::is_function_v<FuncType>)
   {
-    return getFunctionType(std::function<T>());
+    return getFunctionType(std::function<FuncType>());
   }
   else
   {

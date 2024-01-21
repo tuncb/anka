@@ -7,6 +7,7 @@ module;
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <variant>
 
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view.hpp>
@@ -24,7 +25,7 @@ import :type_system;
 
 namespace anka
 {
-  auto ioata(int n) -> std::vector<int>
+auto ioata(int n) -> std::vector<int>
 {
   std::vector<int> res;
   if (n < 1)
@@ -163,6 +164,7 @@ export struct InternalFunctionDefinition
   std::string name;
   TypeList argumentTypes;
   TypeVariant returnType;
+  void *funcPtr = nullptr;
 };
 
 export struct InternalFunctionDefinitionHash
@@ -180,6 +182,12 @@ export struct InternalFunctionDefinitionEqual
     return (k1.name == k2.name) && (k1.argumentTypes == k2.argumentTypes);
   }
 };
+
+export using InternalFunctionMaptype =
+    std::unordered_map<InternalFunctionDefinition, InternalFunctionExecuter, InternalFunctionDefinitionHash,
+                       InternalFunctionDefinitionEqual>;
+
+export auto getInternalFunctions() -> const InternalFunctionMaptype &;
 
 export auto toString(InternalFunctionDefinition definition) -> std::string
 {
@@ -212,7 +220,32 @@ auto getValue(anka::Context &context, const std::vector<anka::Word> &words, cons
 {
   auto word = words[index];
 
-  if constexpr (anka::isExpandable<T>())
+  // Internal function as argument
+  if constexpr (std::is_function_v<typename std::remove_pointer<T>::type>)
+  {
+    if (word.type != WordType::Name)
+    {
+      throw anka::ExecutionError{word, std::nullopt, "Expected a function"};
+    }
+
+    const auto &internalFunctions = anka::getInternalFunctions();
+    auto funcName = anka::getValueWithConversion<std::string>(context, word);
+    auto type = anka::getType<T>();
+    auto funcType = std::get<anka::FunctionType>(type);
+    const auto arguments = std::vector<TypeVariant>(funcType.arguments.begin(), funcType.arguments.end());
+    const auto definition = anka::InternalFunctionDefinition{funcName, arguments, funcType.returnType, nullptr};
+    auto iter = internalFunctions.find(definition);
+
+    if (iter == internalFunctions.end())
+    {
+      throw anka::ExecutionError{word, std::nullopt, "Expected a function"};
+    }
+
+    auto ptr = reinterpret_cast<T>(iter->first.funcPtr);
+
+    return ptr;
+  }
+  else if constexpr (anka::isExpandable<T>())
   {
     auto shouldExpandArray = expandArray[index];
 
@@ -323,10 +356,6 @@ auto createFunctionExecutor(void *funPtr) -> InternalFunctionExecuter
   return executor;
 }
 
-export using InternalFunctionMaptype =
-    std::unordered_map<InternalFunctionDefinition, InternalFunctionExecuter, InternalFunctionDefinitionHash,
-                       InternalFunctionDefinitionEqual>;
-
 template <typename T> anka::WordType getValueWithInternalFunctions()
 {
   using Decayed = std::decay<T>::type;
@@ -346,6 +375,7 @@ auto addInternalFunction(InternalFunctionMaptype &map, std::string &&name, void 
   def.name = name;
   def.returnType = anka::getType<ReturnType>();
   def.argumentTypes = std::vector<anka::TypeVariant>{anka::getType<ArgTypes>()...};
+  def.funcPtr = ptr;
 
   map[def] = createFunctionExecutor<ReturnType, ArgTypes...>(ptr);
 }
@@ -419,13 +449,17 @@ export auto getInternalFunctions() -> const InternalFunctionMaptype &
   addInternalFunction<int, double>(map, "to_double", &anka::to_double<int>);
   addInternalFunction<double, double>(map, "to_double", &anka::to_double<double>);
 
-  // addInternalFunction<int, anka::BinaryOpt<int, int>, std::vector<int>>(map, "foldl", &anka::foldl<int, int>);
-  // addInternalFunction<double, anka::BinaryOpt<double, double>, std::vector<double>>(map, "foldl",
-  //                                                                                   &anka::foldl<double, double>);
+  addInternalFunction<bool, anka::BinaryOpt<bool, bool>, std::vector<bool>>(map, "foldl", &anka::foldl<bool, bool>);
+  addInternalFunction<int, anka::BinaryOpt<int, int>, std::vector<int>>(map, "foldl", &anka::foldl<int, int>);
+  addInternalFunction<double, anka::BinaryOpt<double, double>, std::vector<double>>(map, "foldl",
+                                                                                    &anka::foldl<double, double>);
 
-  // addInternalFunction<int, anka::BinaryOpt<int, int>, std::vector<int>>(map, "scanl", &anka::scanl<int, int>);
-  // addInternalFunction<double, anka::BinaryOpt<double, double>, std::vector<double>>(map, "scanl",
-  //                                                                                   &anka::scanl<double, double>);
+  addInternalFunction<std::vector<bool>, anka::BinaryOpt<bool, bool>, std::vector<bool>>(map, "scanl",
+                                                                                         &anka::scanl<bool, bool>);
+  addInternalFunction<std::vector<int>, anka::BinaryOpt<int, int>, std::vector<int>>(map, "scanl",
+                                                                                     &anka::scanl<int, int>);
+  addInternalFunction<std::vector<double>, anka::BinaryOpt<double, double>, std::vector<double>>(
+      map, "scanl", &anka::scanl<double, double>);
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();
