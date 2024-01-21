@@ -92,7 +92,22 @@ template <typename T> using FilterFunc = bool (*)(T);
 template <typename T>
 struct ValueReturnType
 {
-  using ReturnType = const T&;
+  using ReturnType = T;
+};
+
+template <> struct ValueReturnType<std::vector<bool>>
+{
+  using ReturnType = const std::vector<bool>&;
+};
+
+template <> struct ValueReturnType<std::vector<int>>
+{
+  using ReturnType = const std::vector<int> &;
+};
+
+template <> struct ValueReturnType<std::vector<double>>
+{
+  using ReturnType = const std::vector<double> &;
 };
 
 template <> struct ValueReturnType<bool>
