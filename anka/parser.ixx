@@ -15,7 +15,7 @@ import :interpreter_state;
 
 namespace anka
 {
-export struct ASTError
+export struct ParseError
 {
   std::optional<Token> tokenOpt;
   std::string message;
@@ -72,7 +72,7 @@ template <typename T> auto throwNumberTokenError(const std::string_view content,
   auto b = &(content[token.start]);
   auto e = b + token.len;
   auto msg = std::format("Expected number, found: {}", std::string(b, e));
-  throw anka::ASTError({token, msg});
+  throw anka::ParseError({token, msg});
 }
 
 template <typename T> auto toNumber(const std::string_view content, size_t pos, size_t len) -> std::optional<T>
@@ -125,7 +125,7 @@ auto extractWords(const std::string_view content, anka::Context &context, TokenF
     }
     if (std::ranges::find(unexpectedTypes, tokenIter->type) != unexpectedTypes.end())
     {
-      throw anka::ASTError{*tokenIter,
+      throw anka::ParseError{*tokenIter,
                            std::format("Did not expect to find token: {}", anka::toString(tokenIter->type))};
     }
 
@@ -171,7 +171,7 @@ auto extractWords(const std::string_view content, anka::Context &context, TokenF
       connectedNameIndexOpt = std::nullopt;
       break;
     default:
-      throw anka::ASTError{*tokenIter,
+      throw anka::ParseError{*tokenIter,
                            std::format("Did not expect to find token: {}", anka::toString(tokenIter->type))};
     }
   }
@@ -236,19 +236,19 @@ auto extractArray(const std::string_view content, anka::Context &context, TokenF
 
   if (words.empty())
   {
-    throw ASTError{startToken, "Empty arrays are not supported"};
+    throw ParseError{startToken, "Empty arrays are not supported"};
   }
 
   auto expectedType = words.front().type;
   if (!(expectedType == WordType::IntegerNumber || expectedType == WordType::Boolean ||
         expectedType == WordType::DoubleNumber))
   {
-    throw ASTError{startToken, "Only boolean, integer or double arrays are supported"};
+    throw ParseError{startToken, "Only boolean, integer or double arrays are supported"};
   }
 
   if (!std::all_of(words.begin(), words.end(), [expectedType](const Word &word) { return word.type == expectedType; }))
   {
-    throw ASTError{startToken, "Arrays should have elements of the same type"};
+    throw ParseError{startToken, "Arrays should have elements of the same type"};
   }
 
   if (expectedType == WordType::IntegerNumber)
@@ -266,12 +266,12 @@ auto extractArray(const std::string_view content, anka::Context &context, TokenF
     return createWord(context, std::move(arrayContext.doubleNumbers));
   }
 
-  throw ASTError{startToken, "Fatal Error: Could not extract array"};
+  throw ParseError{startToken, "Fatal Error: Could not extract array"};
 };
 
 namespace anka
 {
-export auto parseAST(const std::string_view content, std::span<Token> tokens, Context &context) -> std::vector<Sentence>
+export auto parse(const std::string_view content, std::span<Token> tokens, Context &context) -> std::vector<Sentence>
 {
   std::vector<Sentence> sentences;
   for (auto tokenIter = tokens.begin(); tokenIter != tokens.end();)

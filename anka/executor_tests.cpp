@@ -12,7 +12,7 @@ import test_utilities;
 TEST_CASE("empty context")
 {
   anka::Context context;
-  AST ast{context, std::vector<anka::Sentence>{}};
+  ParseResult ast{context, std::vector<anka::Sentence>{}};
   CHECK_FALSE(anka::execute(ast.context, ast.sentences).has_value());
 }
 
@@ -20,7 +20,7 @@ auto executeText(const std::string_view content) -> std::string
 {
   anka::Context context;
   auto tokens = anka::extractTokens(content);
-  auto sentences = anka::parseAST(content, tokens, context);
+  auto sentences = anka::parse(content, tokens, context);
   auto res = anka::execute(context, sentences);
   if (res.has_value())
   {

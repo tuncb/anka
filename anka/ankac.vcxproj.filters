@@ -27,7 +27,7 @@
     <ClCompile Include="executor_tests.cpp">
       <Filter>tests</Filter>
     </ClCompile>
-    <ClCompile Include="ast_tests.cpp">
+    <ClCompile Include="parse_tests.cpp">
       <Filter>tests</Filter>
     </ClCompile>
     <ClCompile Include="utility.ixx">

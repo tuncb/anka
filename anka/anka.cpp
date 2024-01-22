@@ -27,7 +27,7 @@ auto execute(anka::Context &context, const std::string_view content) -> bool
   try
   {
     auto tokens = anka::extractTokens(content);
-    auto sentences = anka::parseAST(content, tokens, context);
+    auto sentences = anka::parse(content, tokens, context);
     auto wordOpt = anka::execute(context, sentences);
 
     if (wordOpt.has_value())
@@ -42,7 +42,7 @@ auto execute(anka::Context &context, const std::string_view content) -> bool
     std::cerr << std::format("Token error at {} character: {}.\n", err.pos, err.ch);
     return false;
   }
-  catch (const anka::ASTError &err)
+  catch (const anka::ParseError &err)
   {
     std::cerr << std::format("AST error: {}.\n", err.message);
     if (err.tokenOpt.has_value())
