@@ -1,7 +1,11 @@
-#include "tokenizer.h"
-
+module;
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <vector>
 #include <cctype>
 #include <optional>
+export module anka:tokenizer;
 
 auto isDigit(const char c) -> bool
 {
@@ -46,7 +50,78 @@ template <typename Predicate> auto parseUntil(Predicate predicate, const std::st
   return std::distance(b, next);
 }
 
-auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
+namespace anka
+{
+
+export struct TokenizerError
+{
+  size_t pos;
+  char ch;
+};
+
+export enum class TokenType
+{
+  ArrayStart,
+  ArrayEnd,
+  BlockStart,
+  BlockEnd,
+  Connector,
+  NumberInt,
+  NumberDouble,
+  SentenceEnd,
+  Name,
+  TupleStart,
+  TupleEnd,
+  Placeholder,
+  Executor,
+  Assignment,
+};
+
+export auto toString(TokenType type) -> std::string
+{
+  switch (type)
+  {
+  case TokenType::NumberInt:
+    return "integer";
+  case TokenType::NumberDouble:
+    return "double";
+  case TokenType::Name:
+    return "name";
+  case TokenType::ArrayStart:
+    return "array start '('";
+  case TokenType::ArrayEnd:
+    return "array end ')'";
+  case TokenType::TupleStart:
+    return "tuple start '['";
+  case TokenType::TupleEnd:
+    return "tuple end ']'";
+  case TokenType::SentenceEnd:
+    return "sentence end";
+  case TokenType::Placeholder:
+    return "placeholder";
+  case TokenType::Executor:
+    return "executor '|'";
+  case TokenType::BlockStart:
+    return "block start '{'";
+  case TokenType::BlockEnd:
+    return "block end '}'";
+  case TokenType::Assignment:
+    return "assignment ':'";
+  default:
+    throw(std::runtime_error("Fatal error: Unexpected token type"));
+  }
+}
+
+export struct Token
+{
+  TokenType type;
+  size_t start = 0;
+  size_t len = 0;
+
+  auto operator<=>(const Token &) const = default;
+};
+
+export auto extractTokens(const std::string_view content) -> std::vector<Token>
 {
   std::vector<Token> tokens;
 
@@ -152,37 +227,4 @@ auto anka::extractTokens(const std::string_view content) -> std::vector<Token>
   return tokens;
 }
 
-auto anka::toString(TokenType type) -> std::string
-{
-  switch (type)
-  {
-  case TokenType::NumberInt:
-    return "integer";
-  case TokenType::NumberDouble:
-    return "double";
-  case TokenType::Name:
-    return "name";
-  case TokenType::ArrayStart:
-    return "array start '('";
-  case TokenType::ArrayEnd:
-    return "array end ')'";
-  case TokenType::TupleStart:
-    return "tuple start '['";
-  case TokenType::TupleEnd:
-    return "tuple end ']'";
-  case TokenType::SentenceEnd:
-    return "sentence end";
-  case TokenType::Placeholder:
-    return "placeholder";
-  case TokenType::Executor:
-    return "executor '|'";
-  case TokenType::BlockStart:
-    return "block start '{'";
-  case TokenType::BlockEnd:
-    return "block end '}'";
-  case TokenType::Assignment:
-    return "assignment ':'";
-  default:
-    throw(std::runtime_error("Fatal error: Unexpected token type"));
-  }
-}
+} // namespace anka

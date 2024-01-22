@@ -17,8 +17,9 @@ module;
 
 #include <tl/optional.hpp>
 
-#include "tokenizer.h"
 export module anka:interpreter_state;
+
+import :tokenizer;
 
 namespace anka
 {

@@ -259,13 +259,10 @@
     <ClCompile Include="interpreter_state.ixx" />
     <ClCompile Include="state_utilities.ixx" />
     <ClCompile Include="test_utilities.ixx" />
-    <ClCompile Include="tokenizer.cpp" />
+    <ClCompile Include="tokenizer.ixx" />
     <ClCompile Include="tokenizer_tests.cpp" />
     <ClCompile Include="type_system.ixx" />
     <ClCompile Include="utility.ixx" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="tokenizer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\readme.md" />

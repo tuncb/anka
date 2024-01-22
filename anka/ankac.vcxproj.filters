@@ -21,9 +21,6 @@
     <ClCompile Include="anka.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tokenizer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="tokenizer_tests.cpp">
       <Filter>tests</Filter>
     </ClCompile>
@@ -60,11 +57,9 @@
     <ClCompile Include="executor.ixx">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="tokenizer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
+    <ClCompile Include="tokenizer.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="vcpkg.json" />

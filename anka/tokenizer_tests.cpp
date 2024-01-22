@@ -1,8 +1,9 @@
 #ifndef DOCTEST_CONFIG_DISABLE
 
-#include "tokenizer.h"
 #include <doctest/doctest.h>
 #include <range/v3/view/zip.hpp>
+
+import anka;
 
 // Tests
 
