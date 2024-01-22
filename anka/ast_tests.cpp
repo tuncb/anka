@@ -2,9 +2,10 @@
 
 #include <doctest/doctest.h>
 
-#include "ast.h"
-#include "test_utilities.h"
 #include "tokenizer.h"
+
+import anka;
+import test_utilities;
 
 auto toAST(std::string_view content) -> AST
 {

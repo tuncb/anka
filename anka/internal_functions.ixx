@@ -17,14 +17,18 @@ module;
 #include <fmt/ranges.h>
 #include <tl/optional.hpp>
 
-#include "ast.h"
 export module anka:internal_functions;
 
 import :errors;
 import :type_system;
+import :interpreter_state;
 
 namespace anka
 {
+
+template <typename R, typename T> using BinaryOpt = R (*)(T, T);
+template <typename T> using FilterFunc = bool (*)(T);
+
 auto ioata(int n) -> std::vector<int>
 {
   std::vector<int> res;
@@ -602,5 +606,20 @@ export auto toType(WordType wtype) -> TypeVariant
     throw anka::ExecutionError{std::nullopt, std::nullopt, "Could not understant WordType"};
   }
 }
+
+template <typename T> auto injectInternalConstants(anka::Context &context) -> void
+{
+  auto &&map = anka::getInternalConstants<T>();
+  for (auto &&pair : map)
+  {
+    context.userDefinedNames[pair.first] = createWord(context, pair.second);
+  }
+}
+
+export auto injectInternalConstants(Context &context) -> void
+{
+  injectInternalConstants<double>(context);
+}
+
 
 } // namespace anka

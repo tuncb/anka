@@ -24,9 +24,6 @@
     <ClCompile Include="tokenizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ast.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="executor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -54,19 +51,22 @@
     <ClCompile Include="type_system.ixx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="interpreter_state.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="state_utilities.ixx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="test_utilities.ixx">
+      <Filter>tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tokenizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ast.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="executor.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="test_utilities.h">
-      <Filter>tests</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

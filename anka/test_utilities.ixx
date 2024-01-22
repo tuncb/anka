@@ -1,10 +1,10 @@
-#pragma once
-
+module;
 #include <vector>
+export module test_utilities;
 
-#include "ast.h"
+import anka;
 
-struct AST
+export struct AST
 {
   anka::Context context;
   std::vector<anka::Sentence> sentences;

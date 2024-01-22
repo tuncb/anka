@@ -2,8 +2,9 @@ module;
 #include <optional>
 #include <string>
 
-#include "ast.h"
 export module anka:errors;
+
+import :interpreter_state;
 
 namespace anka
 {

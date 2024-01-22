@@ -252,20 +252,20 @@
     <ClCompile Include="anka.cpp" />
     <ClCompile Include="anka.ixx" />
     <ClCompile Include="errors.ixx" />
-    <ClCompile Include="ast.cpp" />
     <ClCompile Include="ast_tests.cpp" />
     <ClCompile Include="executor.cpp" />
     <ClCompile Include="executor_tests.cpp" />
     <ClCompile Include="internal_functions.ixx" />
+    <ClCompile Include="interpreter_state.ixx" />
+    <ClCompile Include="state_utilities.ixx" />
+    <ClCompile Include="test_utilities.ixx" />
     <ClCompile Include="tokenizer.cpp" />
     <ClCompile Include="tokenizer_tests.cpp" />
     <ClCompile Include="type_system.ixx" />
     <ClCompile Include="utility.ixx" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ast.h" />
     <ClInclude Include="executor.h" />
-    <ClInclude Include="test_utilities.h" />
     <ClInclude Include="tokenizer.h" />
   </ItemGroup>
   <ItemGroup>

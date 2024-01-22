@@ -5,3 +5,5 @@ export module anka;
 export import :internal_functions;
 export import :errors;
 export import :type_system;
+export import :interpreter_state;
+export import :state_utilities;

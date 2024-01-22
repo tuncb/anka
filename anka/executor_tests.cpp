@@ -4,12 +4,12 @@
 
 #include <string_view>
 
-#include "ast.h"
 #include "executor.h"
-#include "test_utilities.h"
 #include "tokenizer.h"
 
 import anka;
+import test_utilities;
+
 
 TEST_CASE("empty context")
 {

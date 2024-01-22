@@ -1,8 +1,9 @@
 #pragma once
 #include <optional>
 #include <string>
+#include <vector>
 
-#include "ast.h"
+import anka;
 
 namespace anka
 {
