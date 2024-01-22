@@ -20,11 +20,6 @@ import :tokenizer;
 
 namespace anka
 {
-export struct ASTError
-{
-  std::optional<Token> tokenOpt;
-  std::string message;
-};
 
 export enum class WordType
 {

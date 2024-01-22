@@ -4,14 +4,24 @@ module;
 #include <format>
 #include <iterator>
 #include <optional>
+#include <span>
 #include <string_view>
 #include <vector>
-#include <span>
 
 export module anka:parser;
 
 import :tokenizer;
 import :interpreter_state;
+
+namespace anka
+{
+export struct ASTError
+{
+  std::optional<Token> tokenOpt;
+  std::string message;
+};
+
+} // namespace anka
 
 template <class T>
 concept TokenForwardIterator =
