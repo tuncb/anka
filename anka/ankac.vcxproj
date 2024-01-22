@@ -257,6 +257,7 @@
     <ClCompile Include="executor_tests.cpp" />
     <ClCompile Include="internal_functions.ixx" />
     <ClCompile Include="interpreter_state.ixx" />
+    <ClCompile Include="parser.ixx" />
     <ClCompile Include="state_utilities.ixx" />
     <ClCompile Include="test_utilities.ixx" />
     <ClCompile Include="tokenizer.ixx" />

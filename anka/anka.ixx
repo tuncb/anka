@@ -9,3 +9,4 @@ export import :interpreter_state;
 export import :state_utilities;
 export import :executor;
 export import :tokenizer;
+export import :parser;
