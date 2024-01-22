@@ -220,6 +220,38 @@ export using InternalFunctionMaptype =
 
 export auto getInternalFunctions() -> const InternalFunctionMaptype &;
 
+template <typename T>
+auto getInternalFunctionDefinition(const std::string &name) -> std::optional<InternalFunctionDefinition>
+{
+  const auto &internalFunctions = anka::getInternalFunctions();
+  auto type = anka::getType<T>();
+  auto funcType = std::get<anka::FunctionType>(type);
+  const auto arguments = std::vector<TypeVariant>(funcType.arguments.begin(), funcType.arguments.end());
+  const auto definition = anka::InternalFunctionDefinition{name, arguments, funcType.returnType, nullptr};
+  auto iter = internalFunctions.find(definition);
+
+  if (iter == internalFunctions.end())
+  {
+    return std::nullopt;
+  }
+
+  return iter->first;
+}
+
+export auto getInternalFunction(const std::string &name, const std::vector<anka::TypeVariant> &arguments)
+    -> std::optional<std::pair<InternalFunctionDefinition, InternalFunctionExecuter>>
+{
+  const auto &internalFunctions = anka::getInternalFunctions();
+  // anka::WordType::Name is a dummy => fix this!!!, do we really need the result type in the definition?
+  const auto definition = anka::InternalFunctionDefinition{name, arguments, anka::TypeFamily::Void, nullptr};
+
+  auto iter = internalFunctions.find(definition);
+  if (iter == internalFunctions.end())
+    return std::nullopt;
+
+  return std::make_pair(iter->first, iter->second);
+}
+
 export auto toString(InternalFunctionDefinition definition) -> std::string
 {
   auto argText = anka::toString(definition.argumentTypes);
@@ -259,22 +291,15 @@ auto getValue(anka::Context &context, const std::vector<anka::Word> &words, cons
       throw anka::ExecutionError{word, std::nullopt, "Expected a function"};
     }
 
-    const auto &internalFunctions = anka::getInternalFunctions();
     auto funcName = anka::getValueWithConversion<std::string>(context, word);
-    auto type = anka::getType<T>();
-    auto funcType = std::get<anka::FunctionType>(type);
-    const auto arguments = std::vector<TypeVariant>(funcType.arguments.begin(), funcType.arguments.end());
-    const auto definition = anka::InternalFunctionDefinition{funcName, arguments, funcType.returnType, nullptr};
-    auto iter = internalFunctions.find(definition);
+    auto def = getInternalFunctionDefinition<T>(funcName);
 
-    if (iter == internalFunctions.end())
+    if (!def)
     {
       throw anka::ExecutionError{word, std::nullopt, "Expected a function"};
     }
 
-    auto ptr = reinterpret_cast<T>(iter->first.funcPtr);
-
-    return ptr;
+    return reinterpret_cast<T>(def.value().funcPtr);
   }
   else if constexpr (anka::isExpandable<T>())
   {

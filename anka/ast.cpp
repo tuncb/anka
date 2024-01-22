@@ -323,12 +323,9 @@ auto anka::toString(const anka::Context &context, const anka::Word &word) -> std
   }
   case WordType::Name: {
     const auto &name = context.names[word.index];
-    auto &&internalFunctions = getInternalFunctions();
 
-    auto kv = ranges::views::keys(internalFunctions);
-    std::vector<anka::InternalFunctionDefinition> definitions{kv.begin(), kv.end()};
-    auto definitionTexts = definitions | ranges::views::filter([&name](const auto &def) { return def.name == name; }) |
-                           ranges::views::transform([](const auto &def) { return anka::toString(def); }) |
+    auto definitions = getInternalFunctionDefinitionsWithName(name);
+    auto definitionTexts = definitions | ranges::views::transform([](const auto &def) { return anka::toString(def); }) |
                            ranges::to<std::vector<std::string>>();
 
     if (!definitionTexts.empty())
@@ -455,10 +452,7 @@ auto anka::getFoldableWord(const anka::Context &context, const anka::Word &word)
 
   const auto &name = context.names[word.index];
 
-  auto kv = ranges::views::keys(getInternalFunctions());
-  std::vector<anka::InternalFunctionDefinition> definitions{kv.begin(), kv.end()};
-
-  if (std::any_of(definitions.begin(), definitions.end(), [&name](const auto &def) { return def.name == name; }))
+  if (!getInternalFunctionDefinitionsWithName(name).empty())
   {
     return word;
   }
@@ -514,5 +508,6 @@ auto anka::getWordCount(const anka::Context &context, const anka::Word &word) ->
 
 auto anka::getWordTypes(const std::vector<anka::Word> &words) -> std::vector<anka::WordType>
 {
-  return words | ranges::views::transform([](const auto &word) { return word.type; }) | ranges::to<std::vector<anka::WordType>>;
+  return words | ranges::views::transform([](const auto &word) { return word.type; }) |
+         ranges::to<std::vector<anka::WordType>>;
 }

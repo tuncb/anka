@@ -141,26 +141,20 @@ auto replaceUserDefinedNames(const anka::Context &context, const std::vector<ank
 auto findOverload(const anka::Context &context, const std::string &name, const anka::Word &word)
     -> std::optional<ExecutionInformation>
 {
-  const auto &internalFunctions = anka::getInternalFunctions();
   const auto allWords = replaceUserDefinedNames(context, anka::getAllWords(context, word));
-
   const auto interpretations = getAllInterpretations(context, allWords);
-
   for (auto interpretation : interpretations)
   {
-    // anka::WordType::Name is a dummy => fix this!!!, do we really need the result type in the definition?
-    const auto definition =
-        anka::InternalFunctionDefinition{name, interpretation.arguments, anka::TypeFamily::Void, nullptr};
-    auto iter = internalFunctions.find(definition);
-    if (iter != internalFunctions.end())
+    auto func = anka::getInternalFunction(name, interpretation.arguments);
+    if (func)
     {
       auto isExpanding = std::ranges::any_of(interpretation.expandArray, [](bool v) { return v; });
 
       // we don't support array of arrays
-      if (isExpanding && !anka::isExpandable(iter->first.returnType))
+      if (isExpanding && !anka::isExpandable(func.value().first.returnType))
         continue;
 
-      return ExecutionInformation{iter->second, interpretation, allWords};
+      return ExecutionInformation{func.value().second, interpretation, allWords};
     }
   }
 
@@ -224,14 +218,7 @@ auto foldtuple(anka::Context &context, const anka::Word &w1, const anka::Word &w
   if (tup.connectedNameIndexOpt)
   {
     const auto &connectedName = anka::getValue<std::string>(context, tup.connectedNameIndexOpt.value());
-    auto &&internal_functions = anka::getInternalFunctions();
-
-    auto kv = ranges::views::keys(internal_functions);
-    std::vector<anka::InternalFunctionDefinition> definitions{kv.begin(), kv.end()};
-
-    auto found = definitions |
-                 ranges::views::filter([&connectedName](const auto &def) { return def.name == connectedName; }) |
-                 ranges::to<std::vector<anka::InternalFunctionDefinition>>;
+    auto found = getInternalFunctionDefinitionsWithName(connectedName);
 
     if (!found.empty())
     {
