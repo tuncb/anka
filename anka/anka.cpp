@@ -134,10 +134,7 @@ auto executeRepl(anka::Context &context) -> void
     }
     else if (input.compare(0, 9, ".internal") == 0)
     {
-      const auto &internalFunctions = anka::getInternalFunctions();
-
-      auto kv = std::views::keys(internalFunctions);
-      std::vector<anka::InternalFunctionDefinition> definitions{kv.begin(), kv.end()};
+      auto definitions = anka::getAllInternalFunctionDefinitions();
       std::sort(definitions.begin(), definitions.end(),
                 [](const auto &lhs, const auto &rhs) { return lhs.name < rhs.name; });
 

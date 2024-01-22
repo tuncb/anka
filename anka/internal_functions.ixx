@@ -218,7 +218,15 @@ export using InternalFunctionMaptype =
     std::unordered_map<InternalFunctionDefinition, InternalFunctionExecuter, InternalFunctionDefinitionHash,
                        InternalFunctionDefinitionEqual>;
 
-export auto getInternalFunctions() -> const InternalFunctionMaptype &;
+auto getInternalFunctions() -> const InternalFunctionMaptype &;
+
+export auto getAllInternalFunctionDefinitions() -> std::vector<InternalFunctionDefinition>
+{
+  const auto &internalFunctions = anka::getInternalFunctions();
+  auto kv = ranges::views::keys(internalFunctions);
+  std::vector<anka::InternalFunctionDefinition> definitions{kv.begin(), kv.end()};
+  return definitions;
+}
 
 template <typename T>
 auto getInternalFunctionDefinition(const std::string &name) -> std::optional<InternalFunctionDefinition>
