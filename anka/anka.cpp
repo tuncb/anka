@@ -15,10 +15,6 @@
 
 #include <ranges>
 
-#include "ast.h"
-#include "executor.h"
-#include "tokenizer.h"
-
 import anka;
 import utility;
 
