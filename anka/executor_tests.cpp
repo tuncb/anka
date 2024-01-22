@@ -4,7 +4,6 @@
 
 #include <string_view>
 
-#include "executor.h"
 #include "tokenizer.h"
 
 import anka;

@@ -1,14 +1,20 @@
-#include "executor.h"
-
+module;
 #include <algorithm>
 #include <format>
 #include <numeric>
+#include <optional>
+#include <string>
 #include <variant>
+#include <vector>
 
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view.hpp>
+export module anka:executor;
 
-import anka;
+import :interpreter_state;
+import :errors;
+import :type_system;
+import :internal_functions;
 
 // forward declerations
 auto executeWords(anka::Context &context, const std::vector<anka::Word> &words) -> std::optional<anka::Word>;
@@ -406,7 +412,9 @@ auto executeWords(anka::Context &context, const std::vector<anka::Word> &words) 
                          [&context](const Word &rhs, const Word &lhs) { return fold(context, lhs, rhs); });
 }
 
-auto anka::execute(Context &context, const std::vector<Sentence> &sentences) -> std::optional<Word>
+namespace anka
+{
+export auto execute(Context &context, const std::vector<Sentence> &sentences) -> std::optional<Word>
 {
   if (sentences.empty())
     return std::nullopt;
@@ -424,3 +432,4 @@ auto anka::execute(Context &context, const std::vector<Sentence> &sentences) -> 
 
   return wordOpt;
 }
+} // namespace anka
