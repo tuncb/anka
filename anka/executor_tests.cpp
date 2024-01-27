@@ -151,5 +151,6 @@ TEST_CASE("binaryOptAlgorithms")
 {
   CHECK_EQ(executeText("filter[not] (true true false)"), "(false)");
   CHECK_EQ(executeText("filter[odd] (1 2 3 4 5)"), "(1 3 5)");
+  CHECK_EQ(executeText("filter |equals[3] _1| (3 2 -3 4 3)"), "(3 3)");
 }
 #endif

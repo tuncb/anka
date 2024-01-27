@@ -138,6 +138,16 @@ template <typename T> auto notEquals(T v1, T v2) -> bool
   return v1 != v2;
 }
 
+template <typename T> auto greaterThan(T v1, T v2) -> bool
+{
+  return v2 > v1;
+}
+
+template <typename T> auto lessThan(T v1, T v2) -> bool
+{
+  return v2 < v1;
+}
+
 template <typename T> auto sum(const std::vector<T> &vec) -> T
 {
   return std::accumulate(vec.begin(), vec.end(), (T)0);
@@ -180,7 +190,7 @@ template <typename T, typename R> auto scanl(anka::BinaryOpt<T, R> func, const s
   return res;
 }
 
-template <typename T> auto filter(anka::FilterFunc<T> func, const std::vector<T> &vec) -> std::vector<T>
+template <typename T, typename FuncType> auto filter(FuncType func, const std::vector<T> &vec) -> std::vector<T>
 {
   std::vector<T> ret;
   if (vec.empty())
@@ -189,6 +199,17 @@ template <typename T> auto filter(anka::FilterFunc<T> func, const std::vector<T>
   std::copy_if(vec.begin(), vec.end(), std::back_inserter(ret), func);
 
   return ret;
+}
+
+template <typename T>
+auto filterWithVec(const std::vector<bool> &filterResults, const std::vector<T> &vec) -> std::vector<T>
+{
+  if (filterResults.size() != vec.size())
+    throw ExecutionError{std::nullopt, std::nullopt, "Filter expects given arrays to have the same size."};
+
+  auto i = 0;
+  auto filterFunc = [&filterResults, &i](T) { return filterResults[i++]; };
+  return filter<T>(filterFunc, vec);
 }
 
 export using InternalFunctionExecuter = std::function<std::optional<anka::Word>(
@@ -513,6 +534,14 @@ export auto getInternalFunctions() -> const InternalFunctionMaptype &
   addInternalFunction<bool, int, int>(map, "not_equals", &anka::notEquals<int>);
   addInternalFunction<bool, double, double>(map, "not_equals", &anka::notEquals<double>);
 
+  addInternalFunction<bool, bool, bool>(map, "greater_than", &anka::greaterThan<bool>);
+  addInternalFunction<bool, int, int>(map, "greater_than", &anka::greaterThan<int>);
+  addInternalFunction<bool, double, double>(map, "greater_than", &anka::greaterThan<double>);
+
+  addInternalFunction<bool, bool, bool>(map, "less_than", &anka::lessThan<bool>);
+  addInternalFunction<bool, int, int>(map, "less_than", &anka::lessThan<int>);
+  addInternalFunction<bool, double, double>(map, "less_than", &anka::lessThan<double>);
+
   addInternalFunction<bool, bool>(map, "not", &anka::notFun);
   addInternalFunction<bool, std::vector<bool>>(map, "all_of", &anka::all_of);
   addInternalFunction<bool, std::vector<bool>>(map, "any_of", &anka::any_of);
@@ -536,10 +565,18 @@ export auto getInternalFunctions() -> const InternalFunctionMaptype &
   addInternalFunction<std::vector<double>, anka::BinaryOpt<double, double>, std::vector<double>>(
       map, "scanl", &anka::scanl<double, double>);
 
-  addInternalFunction<std::vector<bool>, anka::FilterFunc<bool>, std::vector<bool>>(map, "filter", &anka::filter<bool>);
-  addInternalFunction<std::vector<int>, anka::FilterFunc<int>, std::vector<int>>(map, "filter", &anka::filter<int>);
-  addInternalFunction<std::vector<double>, anka::FilterFunc<double>, std::vector<double>>(map, "filter",
-                                                                                          &anka::filter<double>);
+  addInternalFunction<std::vector<bool>, anka::FilterFunc<bool>, std::vector<bool>>(
+      map, "filter", &anka::filter<bool, anka::FilterFunc<bool>>);
+  addInternalFunction<std::vector<int>, anka::FilterFunc<int>, std::vector<int>>(
+      map, "filter", &anka::filter<int, anka::FilterFunc<int>>);
+  addInternalFunction<std::vector<double>, anka::FilterFunc<double>, std::vector<double>>(
+      map, "filter", &anka::filter<double, anka::FilterFunc<double>>);
+
+  addInternalFunction<std::vector<bool>, std::vector<bool>, std::vector<bool>>(map, "filter",
+                                                                               &anka::filterWithVec<bool>);
+  addInternalFunction<std::vector<int>, std::vector<bool>, std::vector<int>>(map, "filter", &anka::filterWithVec<int>);
+  addInternalFunction<std::vector<double>, std::vector<bool>, std::vector<double>>(map, "filter",
+                                                                                   &anka::filterWithVec<double>);
 
   functionMapOpt = std::move(map);
   return functionMapOpt.value();
@@ -620,6 +657,5 @@ export auto injectInternalConstants(Context &context) -> void
 {
   injectInternalConstants<double>(context);
 }
-
 
 } // namespace anka
